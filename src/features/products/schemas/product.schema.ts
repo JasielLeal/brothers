@@ -9,9 +9,7 @@ export const productSchema = z.object({
   stock: z.coerce.number().int().min(0, 'Estoque não pode ser negativo'),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
-  images: z
-    .array(z.string().url('URL de imagem inválida'))
-    .min(1, 'Adicione pelo menos uma imagem'),
+  images: z.array(z.string().min(1, 'Imagem inválida')).min(1, 'Adicione pelo menos uma imagem'),
 })
 
 export type ProductInput = z.infer<typeof productSchema>
