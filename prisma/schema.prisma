@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── Catalog ──────────────────────────────────────────────────────────────────
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Brand {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ProductType {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  description   String
+  price         Float
+  originalPrice Float?
+  images        String[]
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+  stock         Int         @default(0)
+  rating        Float       @default(0)
+  reviewsCount  Int         @default(0)
+  barcode        String?     @unique
+  brandId        String?
+  brand          Brand?       @relation(fields: [brandId], references: [id])
+  typeId         String?
+  type           ProductType? @relation(fields: [typeId], references: [id])
+  costPrice      Float?
+  marginPercent  Float?
+  supplierId     String?
+  supplier       Supplier?   @relation(fields: [supplierId], references: [id])
+  isActive       Boolean     @default(true)
+  isFeatured     Boolean     @default(false)
+  orderItems     OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+model Order {
+  id            String        @id @default(cuid())
+  customerName  String
+  customerPhone String
+  paymentMethod PaymentMethod @default(PIX)
+  deliveryType  DeliveryType  @default(DELIVERY)
+  items         OrderItem[]
+  total          Float
+  discountAmount Float         @default(0)
+  couponCode     String?
+  status        OrderStatus   @default(PENDING)
+  street        String?
+  city          String?
+  state         String?
+  zipCode       String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  productName String
+  quantity    Int
+  price       Float
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  CASH
+}
+
+enum DeliveryType {
+  DELIVERY
+  PICKUP
+}
+
+// ─── Suppliers ────────────────────────────────────────────────────────────────
+
+model Supplier {
+  id          String    @id @default(cuid())
+  name        String
+  contactName String
+  email       String    @unique
+  phone       String
+  cnpj        String    @unique
+  categories  String[]
+  isActive    Boolean   @default(true)
+  boletos     Boleto[]
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Boletos ──────────────────────────────────────────────────────────────────
+
+model Boleto {
+  id           String       @id @default(cuid())
+  code         String       @unique
+  supplierId   String?
+  supplier     Supplier?    @relation(fields: [supplierId], references: [id])
+  supplierName String
+  description  String
+  amount       Float
+  dueDate      DateTime
+  paidAt       DateTime?
+  status       BoletoStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum BoletoStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// ─── Cupons ───────────────────────────────────────────────────────────────────
+
+model Coupon {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  type          CouponType
+  value         Float
+  minOrderValue Float?
+  maxUses       Int?
+  usedCount     Int         @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+// ─── Financeiro ───────────────────────────────────────────────────────────────
+
+model Expense {
+  id          String          @id @default(cuid())
+  description String
+  amount      Float
+  category    ExpenseCategory
+  date        DateTime
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+enum ExpenseCategory {
+  RENT
+  UTILITIES
+  SALARIES
+  SUPPLIES
+  MARKETING
+  MAINTENANCE
+  OTHER
+}

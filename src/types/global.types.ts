@@ -12,6 +12,7 @@ export interface PaginatedResponse<T> {
   page: number
   limit: number
   totalPages: number
+  suggestedProducts?: T[]
 }
 
 export interface ApiResponse<T> {

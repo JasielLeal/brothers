@@ -13,7 +13,7 @@ export default function FavoritosPage() {
 
   if (isEmpty) {
     return (
-      <div className="mx-auto flex min-h-[60vh] max-w-7xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[60vh] max-w-screen-2xl flex-col items-center justify-center px-6 py-16 text-center lg:px-10">
         <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-50">
           <Heart className="h-12 w-12 text-red-300" />
         </div>
@@ -32,7 +32,7 @@ export default function FavoritosPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-screen-2xl px-6 py-8 lg:px-10">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -52,7 +52,7 @@ export default function FavoritosPage() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((product) => {
           const discount = product.originalPrice
             ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)

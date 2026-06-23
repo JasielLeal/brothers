@@ -1,53 +1,38 @@
-import { mockOrders } from '@/mock/orders'
-import type { Order } from '@/features/orders/types/order.types'
-import type { CartItem } from '@/features/cart/types/cart.types'
+import { api } from '@/lib/api/axios'
+import type { Order, CreateOrderPayload, OrderStatus } from '@/features/orders/types/order.types'
+import type { PaginatedResponse } from '@/types/global.types'
 
-const FAKE_DELAY = 700
+export interface OrderFilters {
+  search?: string
+  status?: OrderStatus
+  page?: number
+  limit?: number
+}
 
 export const ordersService = {
-  async getOrders(userId?: string): Promise<Order[]> {
-    await new Promise((resolve) => setTimeout(resolve, FAKE_DELAY))
-    if (userId) return mockOrders.filter((o) => o.userId === userId)
-    return mockOrders
+  async getOrders(filters: OrderFilters = {}): Promise<PaginatedResponse<Order>> {
+    const params: Record<string, string | number> = {}
+    if (filters.search) params.search = filters.search
+    if (filters.status) params.status = filters.status
+    if (filters.page) params.page = filters.page
+    if (filters.limit) params.limit = filters.limit
+
+    const { data } = await api.get<PaginatedResponse<Order>>('/orders', { params })
+    return data
   },
 
   async getOrderById(id: string): Promise<Order> {
-    await new Promise((resolve) => setTimeout(resolve, FAKE_DELAY))
-    const order = mockOrders.find((o) => o.id === id)
-    if (!order) throw new Error('Pedido não encontrado')
-    return order
+    const { data } = await api.get<Order>(`/orders/${id}`)
+    return data
   },
 
-  async createOrder(
-    userId: string,
-    items: CartItem[],
-    shippingAddress: Order['shippingAddress']
-  ): Promise<Order> {
-    await new Promise((resolve) => setTimeout(resolve, FAKE_DELAY))
-    const newOrder: Order = {
-      id: `ORD-${String(Date.now()).slice(-6)}`,
-      userId,
-      items: items.map((item) => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        quantity: item.quantity,
-        price: item.product.price,
-      })),
-      total: items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
-      status: 'pending',
-      shippingAddress,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    mockOrders.push(newOrder)
-    return newOrder
+  async createOrder(payload: CreateOrderPayload): Promise<Order> {
+    const { data } = await api.post<Order>('/orders', payload)
+    return data
   },
 
-  async updateOrderStatus(id: string, status: Order['status']): Promise<Order> {
-    await new Promise((resolve) => setTimeout(resolve, FAKE_DELAY))
-    const idx = mockOrders.findIndex((o) => o.id === id)
-    if (idx === -1) throw new Error('Pedido não encontrado')
-    mockOrders[idx] = { ...mockOrders[idx], status, updatedAt: new Date().toISOString() }
-    return mockOrders[idx]
+  async updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
+    const { data } = await api.patch<Order>(`/orders/${id}`, { status })
+    return data
   },
 }

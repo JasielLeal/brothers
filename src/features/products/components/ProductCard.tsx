@@ -24,10 +24,10 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/product/${product.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl shadow-sm transition-shadow hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-2xl bg-[#1a1a1a] transition-colors hover:bg-[#222]"
     >
       {/* Imagem */}
-      <div className="relative overflow-hidden rounded-t-2xl bg-gray-50">
+      <div className="relative overflow-hidden rounded-t-2xl bg-[#111]">
         <div className="relative aspect-square">
           <Image
             src={product.images[selectedImage] ?? product.images[0]}
@@ -44,26 +44,25 @@ export function ProductCard({ product }: ProductCardProps) {
           </span>
         )}
 
-        {/* Coração — canto superior direito */}
         <button
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             toggleItem(product)
           }}
-          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow-sm backdrop-blur-sm transition-transform hover:scale-110"
+          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm transition-transform hover:scale-110"
           aria-label="Favoritar"
         >
           <Heart
             className={`h-4 w-4 transition-colors ${
-              wishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400'
+              wishlisted ? 'fill-red-500 text-red-500' : 'text-white/60'
             }`}
           />
         </button>
 
         {product.stock === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-gray-900">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+            <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-sm">
               Indisponível
             </span>
           </div>
@@ -81,10 +80,10 @@ export function ProductCard({ product }: ProductCardProps) {
                 e.stopPropagation()
                 setSelectedImage(i)
               }}
-              className={`relative h-10 w-10 overflow-hidden rounded-lg border-2 bg-gray-50 transition-all ${
+              className={`relative h-10 w-10 overflow-hidden rounded-lg border-2 bg-[#111] transition-all ${
                 selectedImage === i
-                  ? 'border-gray-900'
-                  : 'border-transparent opacity-50 hover:opacity-80'
+                  ? 'border-white/60'
+                  : 'border-transparent opacity-40 hover:opacity-70'
               }`}
             >
               <Image src={img} alt="" fill className="object-cover" sizes="40px" />
@@ -95,21 +94,19 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Info */}
       <div className="flex flex-1 flex-col p-4">
-        <p className="mb-1 text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
+        <p className="mb-1 text-[10px] font-semibold tracking-widest text-white/30 uppercase">
           {product.category.name}
         </p>
-        <h3 className="mb-3 line-clamp-2 text-sm leading-snug font-bold text-gray-900 group-hover:text-[#1565a0]">
+        <h3 className="mb-3 line-clamp-2 text-sm leading-snug font-bold text-white/80 group-hover:text-white">
           {product.name}
         </h3>
         <div className="mt-auto flex flex-col">
           {product.originalPrice && (
-            <span className="text-xs text-gray-400 line-through">
+            <span className="text-xs text-white/30 line-through">
               {formatCurrency(product.originalPrice)}
             </span>
           )}
-          <span className="text-lg font-extrabold text-gray-900">
-            {formatCurrency(product.price)}
-          </span>
+          <span className="text-lg font-extrabold text-white">{formatCurrency(product.price)}</span>
         </div>
       </div>
     </Link>

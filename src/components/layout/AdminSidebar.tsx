@@ -9,18 +9,17 @@ import {
   Package,
   ShoppingBag,
   BarChart3,
-  Settings,
-  HelpCircle,
-  FileAxis3D,
   PanelLeftClose,
   PanelLeftOpen,
   Truck,
   X,
   LogOut,
+  Layers,
+  Wallet,
+  Ticket,
 } from 'lucide-react'
+import { useSession, signOut } from 'next-auth/react'
 import { cn } from '@/utils/cn'
-import { useAuthStore } from '@/features/auth/store/auth.store'
-import { useLogout } from '@/features/auth/hooks/useAuth'
 import { useAdminUiStore } from '@/store/admin-ui.store'
 import { Separator } from '../ui/separator'
 
@@ -29,13 +28,15 @@ const MAIN_NAV = [
   { href: '/admin/orders', label: 'Pedidos', icon: ShoppingBag },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/admin/products', label: 'Produtos', icon: Package },
+  { href: '/admin/catalog', label: 'Catálogo', icon: Layers },
 ]
 
-const BOTTOM_NAV = [{ href: '/admin/settings', label: 'Configurações', icon: Settings }]
+const BOTTOM_NAV: { href: string; label: string; icon: React.ElementType }[] = []
 
 const DOCS_NAV = [
+  { label: 'Financeiro', icon: Wallet, href: '/admin/financeiro' },
+  { label: 'Cupons', icon: Ticket, href: '/admin/cupons' },
   { label: 'Fornecedores', icon: Truck, href: '/admin/suppliers' },
-  { label: 'Boletos', icon: FileAxis3D, href: '/admin/invoices' },
 ]
 
 // ── shared nav content ─────────────────────────────────────────────────────────
@@ -47,8 +48,8 @@ function NavContent({
   onLinkClick?: () => void
 }) {
   const pathname = usePathname()
-  const { user } = useAuthStore()
-  const { logout } = useLogout()
+  const { data: session } = useSession()
+  const user = session?.user
 
   return (
     <>
@@ -118,46 +119,15 @@ function NavContent({
       </nav>
 
       <div className="border-t border-gray-100 px-2 py-3">
-        <ul className="space-y-0.5">
-          {BOTTOM_NAV.map(({ href, label, icon: Icon }) => (
-            <li key={href}>
-              <Link
-                href={href}
-                title={collapsed ? label : undefined}
-                onClick={onLinkClick}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800',
-                  collapsed && 'justify-center px-2'
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {!collapsed && label}
-              </Link>
-            </li>
-          ))}
-          <li>
-            <button
-              title={collapsed ? 'Ajuda' : undefined}
-              className={cn(
-                'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800',
-                collapsed && 'justify-center px-2'
-              )}
-            >
-              <HelpCircle className="h-4 w-4 shrink-0" />
-              {!collapsed && 'Ajuda'}
-            </button>
-          </li>
-        </ul>
-
         <div
           className={cn(
-            'mt-2 flex items-center rounded-lg px-3 py-2',
+            'flex items-center rounded-lg px-3 py-2',
             collapsed ? 'justify-center' : 'justify-between'
           )}
         >
           {collapsed ? (
             <button
-              onClick={logout}
+              onClick={() => signOut({ callbackUrl: '/admin/login' })}
               title="Sair"
               className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-300"
             >
@@ -177,7 +147,7 @@ function NavContent({
                 </div>
               </div>
               <button
-                onClick={logout}
+                onClick={() => signOut({ callbackUrl: '/admin/login' })}
                 title="Sair"
                 className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >

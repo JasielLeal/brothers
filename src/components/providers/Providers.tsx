@@ -1,5 +1,6 @@
 'use client'
 
+import { SessionProvider } from 'next-auth/react'
 import { QueryProvider } from '@/lib/api/query-client'
 import type { ReactNode } from 'react'
 
@@ -8,5 +9,9 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  return <QueryProvider>{children}</QueryProvider>
+  return (
+    <SessionProvider>
+      <QueryProvider>{children}</QueryProvider>
+    </SessionProvider>
+  )
 }

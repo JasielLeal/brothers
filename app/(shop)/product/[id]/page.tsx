@@ -17,7 +17,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-screen-2xl px-6 py-8 lg:px-10">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <Skeleton className="aspect-square w-full rounded-xl" />
           <div className="space-y-4">
@@ -34,9 +34,9 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   if (error || !product) {
     return (
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-4 py-16">
-        <p className="text-muted-foreground text-lg font-medium">Produto não encontrado</p>
-        <Link href="/" className="text-primary mt-4 text-sm hover:underline">
+      <div className="mx-auto flex max-w-screen-2xl flex-col items-center justify-center px-4 py-16">
+        <p className="text-lg font-medium text-white/40">Produto não encontrado</p>
+        <Link href="/" className="mt-4 text-sm text-[#4a9fd4] hover:underline">
           Voltar à loja
         </Link>
       </div>
@@ -44,10 +44,10 @@ export default function ProductPage({ params }: ProductPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-screen-2xl px-6 py-8 lg:px-10">
       <Link
         href="/"
-        className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-white/40 hover:text-white"
       >
         <ChevronLeft className="h-4 w-4" />
         Voltar
