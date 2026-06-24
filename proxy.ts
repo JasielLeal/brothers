@@ -1,7 +1,13 @@
 import NextAuth from 'next-auth'
 import { authConfig } from '@/auth.config'
+import type { NextRequest } from 'next/server'
 
-export const { auth: proxy } = NextAuth(authConfig)
+const { auth } = NextAuth(authConfig)
+
+export async function proxy(request: NextRequest) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (auth as any)(request)
+}
 
 export const config = {
   matcher: ['/admin/:path*'],
