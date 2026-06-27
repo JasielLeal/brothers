@@ -14,11 +14,15 @@ export const productSchema = z.object({
   brandId: z.string().optional().nullable(),
   typeId: z.string().optional().nullable(),
   supplierId: z.string().optional().nullable(),
+  weight: z.coerce.number().positive('Peso deve ser positivo').optional().nullable(),
+  length: z.coerce.number().positive('Comprimento deve ser positivo').optional().nullable(),
+  width: z.coerce.number().positive('Largura deve ser positiva').optional().nullable(),
+  height: z.coerce.number().positive('Altura deve ser positiva').optional().nullable(),
   categoryId: z.string().min(1, 'Selecione uma categoria'),
-  stock: z.coerce.number().int().min(0, 'Estoque não pode ser negativo'),
+  stock: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
-  images: z.array(z.string().min(1, 'Imagem inválida')).min(1, 'Adicione pelo menos uma imagem'),
+  images: z.array(z.string()).default([]),
 })
 
 export type ProductInput = z.infer<typeof productSchema>

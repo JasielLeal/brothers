@@ -94,6 +94,9 @@ function SearchContent() {
 
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } = useInfiniteProducts({
     search: q || undefined,
+    categoryId: selectedCategories[0] || undefined,
+    brandId: selectedBrands[0] || undefined,
+    typeId: selectedTypes[0] || undefined,
     minPrice: activeRange?.min || undefined,
     maxPrice: activeRange?.max || undefined,
   })

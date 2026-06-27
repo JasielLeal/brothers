@@ -1,149 +1,217 @@
-<div align="center">
-  <img src="public/logo.png" alt="Brothers Outlet" height="80" />
-  <h1>Brothers Outlet — Frontend</h1>
-  <p>Plataforma de e-commerce de moda moderna, rápida e responsiva.</p>
+# Brothers Outlet — Frontend
 
-![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38BDF8?logo=tailwindcss)
-
-</div>
+E-commerce de moda premium com painel administrativo completo, construído com Next.js 16 App Router.
 
 ---
 
-## Visão geral
+## Stack
 
-Este repositório contém o **frontend** completo da plataforma **Brothers Outlet**, desenvolvido com as tecnologias mais modernas do ecossistema React/Next.js. O projeto foi construído com foco em performance, experiência do usuário e facilidade de integração com qualquer backend ou API REST.
+| Camada         | Tecnologia                     |
+| -------------- | ------------------------------ |
+| Framework      | Next.js 16.2.4 (Turbopack)     |
+| Linguagem      | TypeScript 5                   |
+| Estilização    | Tailwind CSS v4                |
+| Banco de dados | PostgreSQL (Neon) via Prisma 7 |
+| Autenticação   | Auth.js v5 (NextAuth)          |
+| Estado global  | Zustand v5                     |
+| Requisições    | TanStack Query v5 + Axios      |
+| Formulários    | React Hook Form + Zod v4       |
+| Animações      | Framer Motion v12              |
+| Imagens        | Cloudinary                     |
+| UI Primitives  | Radix UI + Lucide React        |
 
 ---
 
 ## Funcionalidades
 
-| Área             | Recursos                                                                                                    |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Loja**         | Home com hero, carrossel de ofertas, categorias, produtos em destaque, marcas parceiras, FAQ e estatísticas |
-| **Produtos**     | Listagem, detalhes, galeria de imagens, badge de desconto e lista de desejos                                |
-| **Carrinho**     | Adicionar/remover itens, atualização de quantidade, resumo de pedido                                        |
-| **Checkout**     | Formulário validado com React Hook Form + Zod                                                               |
-| **Autenticação** | Login e cadastro com gestão de estado via Zustand                                                           |
-| **Admin**        | Dashboard, gestão de pedidos, produtos e usuários                                                           |
-| **UI/UX**        | Layout 100% responsivo (mobile-first), carrossel automático no mobile, navbar com blur ao rolar             |
+### Loja (cliente)
+
+- **Home** — hero animado, seções de mais vendidos, populares e novidades, categorias com marquee
+- **Busca** — pesquisa por nome, marca, categoria e tipo com suporte a acentuação (PostgreSQL `unaccent`)
+- **Produto** — galeria de imagens, variações, preço "De/Por", adicionar ao carrinho e favoritos
+- **Carrinho** — controle de quantidade, progresso de frete grátis e resumo
+- **Checkout** — formulário completo (entrega/retirada, pagamento, cupom de desconto)
+- **Favoritos** — wishlist persistida no localStorage via Zustand
+- **WhatsApp** — botão flutuante de contato
+- **Comprovante** — página de sucesso com detalhes do pedido
+
+### Painel Admin (`/admin`)
+
+- **Dashboard** — KPIs (receita, pedidos, ticket médio, estoque investido), gráfico de receita por dia e pedidos semanais com comparativo do mês anterior
+- **Pedidos** — listagem com filtros por status, drawer de detalhes, confirmação/cancelamento, impressão de comprovante A4
+- **Produtos** — CRUD completo com upload de imagens para Cloudinary, drag-and-drop de ordem, calculadora de margem, código de barras EAN-13
+- **Cupons** — CRUD com tipo percentual ou fixo, limite de usos, validade e controle de uso
+- **Categorias** — CRUD de categorias, marcas e tipos de produto
+- **Fornecedores** — cadastro e gestão de fornecedores com CNPJ
+- **Boletos** — controle de contas a pagar por fornecedor com status (pendente/pago/vencido/cancelado)
+- **Financeiro** — registro de despesas por categoria com gráficos de evolução mensal
+- **Analytics** — análise de receita, ticket médio e produtos mais vendidos
+- **Usuários** — listagem dos administradores cadastrados
 
 ---
 
-## Stack técnica
-
-- **[Next.js 16](https://nextjs.org/)** — App Router, Server Components, rotas por grupos
-- **[React 19](https://react.dev/)** — Última versão estável
-- **[TypeScript 5](https://www.typescriptlang.org/)** — Tipagem estrita em todo o projeto
-- **[Tailwind CSS 4](https://tailwindcss.com/)** — Estilização utilitária com tema customizado
-- **[TanStack Query v5](https://tanstack.com/query)** — Cache e sincronização de dados do servidor
-- **[Zustand](https://zustand-demo.pmnd.rs/)** — Estado global leve (carrinho, autenticação)
-- **[React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)** — Formulários com validação em schema
-- **[Radix UI](https://www.radix-ui.com/)** — Componentes acessíveis (Dialog, Select, Toast…)
-- **[Lucide React](https://lucide.dev/)** — Ícones SVG consistentes
-- **[react-fast-marquee](https://www.react-fast-marquee.com/)** — Carrossel de marcas suave
-- **[Axios](https://axios-http.com/)** — Cliente HTTP configurável
-- **ESLint + Prettier + Husky** — Qualidade de código automatizada
-
----
-
-## Estrutura do projeto
+## Estrutura do Projeto
 
 ```
-stackcommerce-frontend/
-├── app/                        # Rotas (Next.js App Router)
-│   ├── (shop)/                 # Grupo: loja pública
-│   │   ├── page.tsx            # Home
-│   │   ├── cart/               # Carrinho
-│   │   ├── checkout/           # Checkout
-│   │   └── product/[id]/       # Detalhe do produto
-│   ├── (auth)/                 # Login / Cadastro
-│   ├── admin/                  # Painel administrativo
-│   │   ├── dashboard/
-│   │   ├── orders/
-│   │   ├── products/
-│   │   └── users/
-│   ├── globals.css             # Tema global (Tailwind + fontes)
-│   └── layout.tsx              # Root layout
-├── src/
-│   ├── components/             # Componentes compartilhados
-│   │   ├── layout/             # Navbar, Footer
-│   │   └── ui/                 # Primitivos (Button, Card, Skeleton…)
-│   ├── features/               # Domínios de negócio
-│   │   ├── auth/
-│   │   ├── cart/
-│   │   ├── orders/
-│   │   └── products/
-│   ├── hooks/                  # Hooks globais reutilizáveis
-│   ├── lib/                    # Configurações (axios, queryClient…)
-│   ├── mock/                   # Dados mock para desenvolvimento
-│   ├── schemas/                # Schemas Zod
-│   ├── types/                  # Tipos TypeScript globais
-│   └── utils/                  # Funções utilitárias
-├── public/
-│   ├── logo.png                # Logo da Brothers Outlet
-│   └── background.png          # Imagem hero
-└── package.json
+app/
+├── (auth)/login/               # Login do cliente
+├── (shop)/                     # Grupo da loja pública
+│   ├── layout.tsx              # Navbar + Footer + WhatsApp
+│   ├── page.tsx                # Home
+│   ├── cart/                   # Carrinho
+│   ├── checkout/               # Checkout + Sucesso
+│   ├── product/[id]/           # Detalhe do produto
+│   ├── search/                 # Busca com filtros
+│   ├── categoria/[slug]/       # Listagem por categoria
+│   └── favoritos/              # Wishlist
+├── admin/
+│   ├── login/                  # Login do admin
+│   └── (protected)/            # Rotas protegidas
+│       ├── dashboard/
+│       ├── orders/
+│       ├── products/
+│       ├── cupons/
+│       ├── suppliers/
+│       ├── invoices/
+│       ├── financeiro/
+│       ├── analytics/
+│       └── users/
+└── api/                        # Route Handlers (REST API)
+    ├── auth/[...nextauth]/
+    ├── products/
+    ├── categories/
+    ├── brands/
+    ├── product-types/
+    ├── orders/
+    ├── coupons/validate/
+    ├── suppliers/
+    ├── boletos/
+    ├── expenses/
+    └── catalog/nav/
+
+src/
+├── auth.ts                     # Configuração NextAuth
+├── auth.config.ts              # Callbacks JWT/Session/Authorized
+├── features/                   # Módulos por domínio
+│   ├── auth/
+│   ├── cart/
+│   ├── products/
+│   ├── orders/
+│   ├── coupons/
+│   ├── suppliers/
+│   ├── boletos/
+│   ├── financeiro/
+│   └── wishlist/
+├── components/
+│   ├── layout/                 # Navbar, Footer, AdminSidebar
+│   ├── ui/                     # Primitivos (Button, Input, Card…)
+│   └── providers/              # QueryClient, SessionProvider
+└── lib/
+    └── db.ts                   # Cliente Prisma singleton
+
+prisma/
+├── schema.prisma               # Modelos do banco
+└── migrations/                 # Histórico de migrações
+
+scripts/
+├── seed-admin.ts               # Cria o usuário administrador
+└── seed-products.ts            # Popula produtos de exemplo
+
+proxy.ts                        # Proteção de rotas (Next.js 16)
+instrumentation.ts              # Bootstrap automático do admin
 ```
 
 ---
 
-## Como rodar localmente
+## Banco de Dados
 
-### Pré-requisitos
+### Modelos
 
-- [Node.js 20+](https://nodejs.org/)
-- [npm](https://www.npmjs.com/) ou [pnpm](https://pnpm.io/)
+| Modelo                               | Descrição                                               |
+| ------------------------------------ | ------------------------------------------------------- |
+| `User`                               | Administradores do sistema                              |
+| `Product`                            | Produtos com imagens, estoque, preço de custo e margem  |
+| `Category` / `Brand` / `ProductType` | Catálogo                                                |
+| `Order` + `OrderItem`                | Pedidos com cupom e desconto                            |
+| `Coupon`                             | Cupons percentuais ou de valor fixo com controle de uso |
+| `Supplier`                           | Fornecedores                                            |
+| `Boleto`                             | Contas a pagar vinculadas a fornecedores                |
+| `Expense`                            | Despesas operacionais categorizadas                     |
 
-### Instalação
+### Busca com acentuação
+
+A extensão `unaccent` do PostgreSQL está habilitada. Buscas usam `unaccent(lower(campo)) ILIKE unaccent(lower(termo))`, permitindo encontrar "Boné" ao digitar "bone".
+
+---
+
+## Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz:
+
+```env
+# Banco de dados (Neon PostgreSQL)
+DATABASE_URL="postgresql://..."
+
+# Auth.js
+AUTH_SECRET="sua-chave-secreta"
+
+# Usuário administrador inicial
+ADMIN_NAME="Seu Nome"
+ADMIN_EMAIL="admin@email.com"
+ADMIN_PASSWORD="senha-segura"
+
+# Cloudinary (upload de imagens)
+# cloud_name pode ser NEXT_PUBLIC (aparece nas URLs), API_KEY e API_SECRET NUNCA
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="seu-cloud-name"
+CLOUDINARY_API_KEY="sua-api-key"
+CLOUDINARY_API_SECRET="seu-api-secret"
+```
+
+---
+
+## Setup Local
 
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/stackcommerce-frontend.git
-cd stackcommerce-frontend
-
-# Instale as dependências
+# Instalar dependências
 npm install
 
-# Inicie o servidor de desenvolvimento
+# Aplicar migrações do banco
+npx prisma migrate deploy
+
+# Criar usuário admin (requer ADMIN_* no .env)
+npx tsx scripts/seed-admin.ts
+
+# (Opcional) Popular produtos de exemplo
+npx tsx scripts/seed-products.ts
+
+# Rodar em desenvolvimento
 npm run dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) no navegador.
-
-### Scripts disponíveis
-
-| Comando          | Descrição                            |
-| ---------------- | ------------------------------------ |
-| `npm run dev`    | Inicia o servidor de desenvolvimento |
-| `npm run build`  | Gera o build de produção             |
-| `npm run start`  | Inicia o servidor de produção        |
-| `npm run lint`   | Verifica erros de lint               |
-| `npm run format` | Formata o código com Prettier        |
+Acesse em `http://localhost:3000` e o painel em `http://localhost:3000/admin`.
 
 ---
 
-## Variáveis de ambiente
+## Deploy (Vercel)
 
-Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
-
-```env
-NEXT_PUBLIC_API_URL=https://sua-api.com
-```
-
----
-
-## Design system
-
-- **Cor primária:** `#1565a0` (azul aço)
-- **Fonte:** Mona Sans / Helvetica Neue
-- **Border radius:** `rounded-2xl` como padrão
-- **Breakpoints:** mobile-first — `sm: 640px`, `md: 768px`, `lg: 1024px`
+1. Conecte o repositório na Vercel
+2. Configure as variáveis de ambiente no painel da Vercel
+3. O build executa `prisma generate && next build` automaticamente
+4. O `instrumentation.ts` cria o admin na primeira inicialização se não existir
 
 ---
 
-## Licença
+## Autenticação
 
-Projeto proprietário — todos os direitos reservados © 2026 Brothers Outlet.
+Auth.js v5 com credenciais (e-mail + senha com bcryptjs). O arquivo `proxy.ts` (equivalente ao middleware do Next.js ≤15) protege todas as rotas `/admin/*`, redirecionando para `/admin/login` se não autenticado.
+
+Para criar o primeiro admin em produção, configure as variáveis `ADMIN_*` — o `instrumentation.ts` cria automaticamente na primeira inicialização, ou execute manualmente `npx tsx scripts/seed-admin.ts`.
+
+---
+
+## Padrões de Código
+
+- Respostas de API padronizadas com helpers: `ok()`, `created()`, `badRequest()`, `notFound()`, `internalError()`
+- Paginação em todas as listagens via `page` + `limit`
+- Validação com Zod em todos os endpoints e formulários
+- Imagens enviadas em base64 para a API, armazenadas no Cloudinary e URLs salvas no banco

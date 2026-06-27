@@ -1,10 +1,19 @@
 import bcrypt from 'bcryptjs'
 import { prisma } from './db'
 
+const MIN_PASSWORD_LENGTH = 12
+
 export async function bootstrapAdmin() {
   const { ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD } = process.env
 
   if (!ADMIN_NAME || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return
+  }
+
+  if (ADMIN_PASSWORD.length < MIN_PASSWORD_LENGTH) {
+    console.error(
+      `[bootstrap] ADMIN_PASSWORD muito curta (mínimo ${MIN_PASSWORD_LENGTH} caracteres). Administrador não criado.`
+    )
     return
   }
 
@@ -24,6 +33,11 @@ export async function bootstrapAdmin() {
 
     console.log(`[bootstrap] Administrador criado: ${ADMIN_EMAIL}`)
   } catch (error) {
-    console.error('[bootstrap] Falha ao criar administrador:', error)
+    console.error(
+      '[bootstrap] Falha ao criar administrador:',
+      typeof error === 'object' && error !== null && 'message' in error
+        ? (error as Error).message
+        : 'Erro desconhecido'
+    )
   }
 }

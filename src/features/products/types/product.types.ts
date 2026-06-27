@@ -1,3 +1,24 @@
+export const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
+export type SizeLabel = (typeof SIZES)[number]
+
+export interface VariantSizeStock {
+  id: string
+  size: SizeLabel
+  stock: number
+}
+
+export interface ProductVariant {
+  id: string
+  productId: string
+  colorName: string
+  colorHex?: string | null
+  images: string[]
+  barcode?: string | null
+  sizes: VariantSizeStock[]
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Category {
   id: string
   name: string
@@ -44,6 +65,10 @@ export interface Product {
   marginPercent?: number | null
   supplierId?: string | null
   supplier?: { id: string; name: string } | null
+  weight?: number | null
+  length?: number | null
+  width?: number | null
+  height?: number | null
   isActive: boolean
   isFeatured: boolean
   createdAt: string
@@ -82,6 +107,10 @@ export interface ProductInput {
   costPrice?: number | null
   marginPercent?: number | null
   supplierId?: string | null
+  weight?: number | null
+  length?: number | null
+  width?: number | null
+  height?: number | null
   images: string[]
   categoryId: string
   stock: number

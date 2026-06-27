@@ -102,29 +102,17 @@ function StatsCarousel({ stats }: { stats: StatItem[] }) {
   )
 }
 
-// ── constants ─────────────────────────────────────────────────────────────────
-const ALL_CATEGORIES = [
-  'Camisetas',
-  'Calças',
-  'Calçados',
-  'Jaquetas',
-  'Acessórios',
-  'Bolsas',
-  'Underwear',
-]
-
 const EMPTY_FORM: SupplierInput = {
   name: '',
   contactName: '',
-  email: '',
   phone: '',
-  cnpj: '',
   categories: [],
   isActive: true,
 }
 
 // ── page ──────────────────────────────────────────────────────────────────────
 export default function AdminSuppliersPage() {
+  const [catInput, setCatInput] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [page, setPage] = useState(1)
@@ -178,6 +166,7 @@ export default function AdminSuppliersPage() {
   function openCreate() {
     setEditing(null)
     setForm(EMPTY_FORM)
+    setCatInput('')
     setDrawerOpen(true)
   }
 
@@ -186,18 +175,32 @@ export default function AdminSuppliersPage() {
     setForm({
       name: s.name,
       contactName: s.contactName,
-      email: s.email,
       phone: s.phone,
-      cnpj: s.cnpj,
       categories: [...s.categories],
       isActive: s.isActive,
     })
+    setCatInput('')
     setDrawerOpen(true)
   }
 
   function closeDrawer() {
     setDrawerOpen(false)
     setEditing(null)
+    setCatInput('')
+  }
+
+  function addCategory(raw: string) {
+    const tag = raw.trim()
+    if (!tag || form.categories.includes(tag)) {
+      setCatInput('')
+      return
+    }
+    setForm((f) => ({ ...f, categories: [...f.categories, tag] }))
+    setCatInput('')
+  }
+
+  function removeCategory(cat: string) {
+    setForm((f) => ({ ...f, categories: f.categories.filter((c) => c !== cat) }))
   }
 
   async function handleSave() {
@@ -213,15 +216,6 @@ export default function AdminSuppliersPage() {
   async function handleDelete(id: string) {
     await deleteSupplier.mutateAsync(id)
     setDeletingId(null)
-  }
-
-  function toggleCategory(cat: string) {
-    setForm((f) => ({
-      ...f,
-      categories: f.categories.includes(cat)
-        ? f.categories.filter((c) => c !== cat)
-        : [...f.categories, cat],
-    }))
   }
 
   const isSaving = createSupplier.isPending || updateSupplier.isPending
@@ -308,7 +302,7 @@ export default function AdminSuppliersPage() {
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-gray-500">
-                      {s.contactName} · {s.email}
+                      {s.contactName} · {s.phone}
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {s.categories.slice(0, 3).map((c) => (
@@ -369,9 +363,7 @@ export default function AdminSuppliersPage() {
                     {[
                       'Empresa',
                       'Responsável',
-                      'E-mail',
                       'Telefone',
-                      'CNPJ',
                       'Categorias',
                       'Status',
                       'Cadastro',
@@ -400,11 +392,7 @@ export default function AdminSuppliersPage() {
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-gray-600">{s.contactName}</td>
-                      <td className="px-5 py-3.5 text-gray-600">{s.email}</td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-gray-600">{s.phone}</td>
-                      <td className="px-5 py-3.5 font-mono text-xs whitespace-nowrap text-gray-600">
-                        {s.cnpj}
-                      </td>
                       <td className="px-5 py-3.5">
                         <div className="flex flex-wrap gap-1">
                           {s.categories.slice(0, 2).map((c) => (
@@ -547,28 +535,15 @@ export default function AdminSuppliersPage() {
                   className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none"
                 />
               </label>
-              <label className="block">
-                <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                  Responsável
-                </span>
-                <input
-                  value={form.contactName}
-                  onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
-                  placeholder="Nome do contato"
-                  className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none"
-                />
-              </label>
-
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
                   <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                    E-mail
+                    Responsável
                   </span>
                   <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    placeholder="email@empresa.com"
+                    value={form.contactName}
+                    onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
+                    placeholder="Nome do contato"
                     className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none"
                   />
                 </label>
@@ -585,33 +560,43 @@ export default function AdminSuppliersPage() {
                 </label>
               </div>
 
-              <label className="block">
-                <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                  CNPJ
-                </span>
-                <input
-                  value={form.cnpj}
-                  onChange={(e) => setForm((f) => ({ ...f, cnpj: e.target.value }))}
-                  placeholder="00.000.000/0001-00"
-                  className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none"
-                />
-              </label>
-
               <div>
                 <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Categorias fornecidas
                 </span>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {ALL_CATEGORIES.map((cat) => (
-                    <button
+                <div className="mt-1.5 flex flex-wrap gap-1.5 rounded-xl bg-gray-50 px-3 py-2.5 ring-1 ring-gray-200 focus-within:ring-2 focus-within:ring-[#4A6CF7]/40">
+                  {form.categories.map((cat) => (
+                    <span
                       key={cat}
-                      type="button"
-                      onClick={() => toggleCategory(cat)}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${form.categories.includes(cat) ? 'bg-[#4A6CF7] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      className="flex items-center gap-1 rounded-full bg-[#4A6CF7] px-2.5 py-0.5 text-xs font-semibold text-white"
                     >
                       {cat}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => removeCategory(cat)}
+                        className="ml-0.5 rounded-full hover:opacity-70"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
                   ))}
+                  <input
+                    value={catInput}
+                    onChange={(e) => setCatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault()
+                        addCategory(catInput)
+                      }
+                      if (e.key === 'Backspace' && !catInput && form.categories.length > 0)
+                        removeCategory(form.categories[form.categories.length - 1])
+                    }}
+                    onBlur={() => {
+                      if (catInput.trim()) addCategory(catInput)
+                    }}
+                    placeholder={form.categories.length === 0 ? 'Digite e pressione Enter...' : ''}
+                    className="min-w-28 flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                  />
                 </div>
               </div>
 

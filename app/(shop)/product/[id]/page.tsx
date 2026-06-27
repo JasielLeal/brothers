@@ -44,7 +44,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-screen-2xl px-6 py-8 lg:px-10">
+    <div className="mx-auto w-full max-w-300 px-4 py-6 lg:px-8">
       <Link
         href="/"
         className="mb-6 inline-flex items-center gap-1 text-sm text-white/40 hover:text-white"

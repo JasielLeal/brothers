@@ -274,16 +274,17 @@ export default function DashboardPage() {
 
   // ── Top products (por quantidade vendida) ──────────────
   const topProducts = useMemo(() => {
-    const counts = new Map<string, { count: number; name: string; productId: string }>()
+    const counts = new Map<string, { count: number; name: string; productId: string | null }>()
     confirmedOrders.forEach((o) => {
       o.items.forEach((item) => {
-        const e = counts.get(item.productId) ?? {
+        const key = item.productId ?? item.productName
+        const e = counts.get(key) ?? {
           count: 0,
           name: item.productName,
           productId: item.productId,
         }
         e.count += item.quantity
-        counts.set(item.productId, e)
+        counts.set(key, e)
       })
     })
     const ranked = Array.from(counts.values())
@@ -531,7 +532,7 @@ function TopProductsCard({
   products,
 }: {
   products: {
-    productId: string
+    productId: string | null
     name: string
     count: number
     image: string | null

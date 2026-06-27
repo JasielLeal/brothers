@@ -2,7 +2,8 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { X, Download, Loader2 } from 'lucide-react'
-import type { Product } from '@/features/products/types/product.types'
+import type { Product, ProductVariant, SizeLabel } from '@/features/products/types/product.types'
+import { SIZES } from '@/features/products/types/product.types'
 
 /* ── JsBarcode loader ──────────────────────────────────── */
 type JsBarcodeLib = (el: SVGSVGElement, value: string, opts: object) => void
@@ -211,11 +212,46 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
   const [exporting, setExporting] = useState(false)
   const [barcodeReady, setBarcodeReady] = useState(false)
 
+  // ── Variant selection for stock deduction ───────────────
+  const [variants, setVariants] = useState<ProductVariant[]>([])
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
+  const [selectedSize, setSelectedSize] = useState<SizeLabel | ''>('')
+
   useEffect(() => {
-    if (!product.barcode) return
+    fetch(`/api/products/${product.id}/variants`)
+      .then((r) => r.json())
+      .then((d) => {
+        const list: ProductVariant[] = Array.isArray(d) ? d : (d.data ?? [])
+        setVariants(list)
+        if (list.length > 0) setSelectedVariant(list[0])
+      })
+      .catch(() => {})
+  }, [product.id])
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    setSelectedSize('')
+  }, [selectedVariant?.id])
+
+  const availableSizes = selectedVariant
+    ? SIZES.filter((s) => (selectedVariant.sizes.find((sz) => sz.size === s)?.stock ?? 0) > 0)
+    : []
+
+  function stockFor(size: SizeLabel) {
+    return selectedVariant?.sizes.find((sz) => sz.size === size)?.stock ?? 0
+  }
+
+  const activeBarcode = selectedVariant?.barcode ?? null
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!activeBarcode) {
+      setBarcodeReady(false)
+      return
+    }
     loadJsBarcode().then((JsBarcode) => {
       if (!previewBarcodeSvgRef.current) return
-      JsBarcode(previewBarcodeSvgRef.current, product.barcode!, {
+      JsBarcode(previewBarcodeSvgRef.current, activeBarcode, {
         format: 'EAN13',
         width: 1.6,
         height: 44,
@@ -229,16 +265,16 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
       })
       setBarcodeReady(true)
     })
-  }, [product.barcode])
+  }, [activeBarcode])
 
   function handleExport() {
-    if (!product.barcode) return
+    if (!activeBarcode) return
     setExporting(true)
 
     loadJsBarcode().then((JsBarcode) => {
       // Render barcode into a detached SVG for the print HTML
       const printSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-      JsBarcode(printSvg, product.barcode!, {
+      JsBarcode(printSvg, activeBarcode, {
         format: 'EAN13',
         width: 1.8,
         height: 48,
@@ -291,13 +327,76 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
           </button>
         </div>
 
+        {/* ── Seleção de cor/tamanho para baixa de estoque ── */}
+        {variants.length > 0 && (
+          <div className="space-y-3 border-b border-gray-100 bg-gray-50/60 px-6 py-4">
+            <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+              Selecione para dar baixa no estoque ao imprimir
+            </p>
+
+            {/* Cores */}
+            <div className="space-y-1.5">
+              <p className="text-xs text-gray-400">Cor</p>
+              <div className="flex flex-wrap gap-2">
+                {variants.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setSelectedVariant(v)}
+                    title={v.colorName}
+                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+                      selectedVariant?.id === v.id
+                        ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    <div
+                      className="h-3 w-3 rounded-full border border-gray-300"
+                      style={{ backgroundColor: v.colorHex ?? '#888' }}
+                    />
+                    {v.colorName}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tamanhos */}
+            {selectedVariant && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-gray-400">Tamanho</p>
+                {availableSizes.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSelectedSize(s)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all ${
+                          selectedSize === s
+                            ? 'border-[#4A6CF7] bg-[#4A6CF7] text-white'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {s}
+                        <span className="ml-1 opacity-60">({stockFor(s)})</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-red-400">Sem estoque disponível para esta cor</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* preview */}
         <div className="flex-1 overflow-auto p-6">
-          {product.barcode ? (
+          {activeBarcode ? (
             <>
               <p className="mb-4 text-center text-xs text-gray-400">
-                Cód. de barras:{' '}
-                <span className="font-mono font-semibold text-gray-600">{product.barcode}</span>
+                Cód. de barras ({selectedVariant?.colorName}):{' '}
+                <span className="font-mono font-semibold text-gray-600">{activeBarcode}</span>
               </p>
 
               <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-200 p-5">
@@ -766,9 +865,9 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
             </>
           ) : (
             <div className="flex h-40 items-center justify-center text-center text-sm text-gray-400">
-              Este produto não possui código de barras.
-              <br />
-              Salve-o novamente para gerar um.
+              {variants.length === 0
+                ? 'Carregando variantes...'
+                : 'Selecione uma cor para ver o código de barras.'}
             </div>
           )}
         </div>
@@ -783,7 +882,7 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
           </button>
           <button
             onClick={handleExport}
-            disabled={exporting || !product.barcode || !barcodeReady}
+            disabled={exporting || !activeBarcode || !barcodeReady}
             className="flex items-center gap-2 rounded-lg bg-[#4A6CF7] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3a5ce6] disabled:opacity-50"
           >
             {exporting ? (

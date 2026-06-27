@@ -3,11 +3,20 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
 import { ok, badRequest, unauthorized, notFound, internalError } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth-guard'
 
 const updateSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']).optional(),
   notes: z.string().optional().nullable(),
 })
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: [],
+  CANCELLED: [],
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,8 +37,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
-    if (!session?.user) return unauthorized()
+    const { error } = await requireAdmin()
+    if (error) return error
 
     const { id } = await params
     const body = await req.json()
@@ -42,6 +51,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     if (!existing) return notFound('Pedido não encontrado')
 
+    // Validate status transition
+    if (parsed.data.status && parsed.data.status !== existing.status) {
+      const allowed = VALID_TRANSITIONS[existing.status] ?? []
+      if (!allowed.includes(parsed.data.status)) {
+        return badRequest(`Transição inválida: ${existing.status} → ${parsed.data.status}`)
+      }
+    }
+
     const isCancelling = parsed.data.status === 'CANCELLED' && existing.status !== 'CANCELLED'
 
     const order = await prisma.$transaction(async (tx) => {
@@ -52,14 +69,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       })
 
       if (isCancelling) {
-        await Promise.all(
-          existing.items.map((item) =>
-            tx.product.update({
-              where: { id: item.productId },
+        for (const item of existing.items.filter((i) => i.productId != null)) {
+          // Restore product total stock
+          await tx.product.update({
+            where: { id: item.productId! },
+            data: { stock: { increment: item.quantity } },
+          })
+
+          // Restore variant size stock if color+size are known
+          if (item.color && item.size) {
+            await tx.variantSizeStock.updateMany({
+              where: {
+                size: item.size,
+                variant: {
+                  productId: item.productId!,
+                  colorName: item.color,
+                },
+              },
               data: { stock: { increment: item.quantity } },
             })
-          )
-        )
+          }
+        }
       }
 
       return updated

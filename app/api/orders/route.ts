@@ -2,13 +2,23 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
-import { ok, created, badRequest, unauthorized, internalError } from '@/lib/api-response'
+import {
+  ok,
+  created,
+  badRequest,
+  unauthorized,
+  tooManyRequests,
+  internalError,
+} from '@/lib/api-response'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 
 const orderItemSchema = z.object({
   productId: z.string().min(1),
   productName: z.string().min(1),
   quantity: z.number().int().positive(),
-  price: z.number().positive(),
+  size: z.string().optional().nullable(),
+  color: z.string().optional().nullable(),
+  // price is intentionally omitted — always read from DB
 })
 
 const createSchema = z.object({
@@ -17,9 +27,9 @@ const createSchema = z.object({
   paymentMethod: z.enum(['PIX', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH']),
   deliveryType: z.enum(['DELIVERY', 'PICKUP']),
   items: z.array(orderItemSchema).min(1),
-  total: z.number().positive(),
-  discountAmount: z.number().min(0).default(0),
   couponCode: z.string().optional().nullable(),
+  shippingCost: z.number().min(0).default(0),
+  shippingService: z.string().optional().nullable(),
   street: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   state: z.string().optional().nullable(),
@@ -67,67 +77,163 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 pedidos por hora por IP
+    const ip = getClientIp(req)
+    const rl = rateLimit(`orders:${ip}`, 5, 60 * 60 * 1000)
+    if (!rl.allowed) return tooManyRequests(rl.resetInSeconds)
+
     const body = await req.json()
     const parsed = createSchema.safeParse(body)
     if (!parsed.success) return badRequest(parsed.error.issues[0].message)
 
-    const { items, ...orderData } = parsed.data
+    const { items, couponCode, shippingCost, shippingService, ...orderData } = parsed.data
+    const normalizedCode = couponCode?.toUpperCase().trim() ?? null
 
-    // Verify stock availability before creating the order
-    const products = await prisma.product.findMany({
-      where: { id: { in: items.map((i) => i.productId) } },
-      select: { id: true, name: true, stock: true },
+    // ── 1. Read prices from DB — never trust the client ──────
+    const dbProducts = await prisma.product.findMany({
+      where: { id: { in: items.map((i) => i.productId) }, isActive: true },
+      select: { id: true, name: true, price: true, stock: true },
     })
 
     for (const item of items) {
-      const product = products.find((p) => p.id === item.productId)
+      const product = dbProducts.find((p) => p.id === item.productId)
       if (!product) return badRequest(`Produto não encontrado: ${item.productId}`)
-      if (product.stock < item.quantity) {
-        return badRequest(
-          `Estoque insuficiente para "${product.name}". Disponível: ${product.stock}`
-        )
+
+      if (item.size && item.color) {
+        // Check variant size stock
+        const variant = await prisma.productVariant.findFirst({
+          where: { productId: item.productId, colorName: item.color },
+          include: { sizes: { where: { size: item.size } } },
+        })
+        const sizeStock = variant?.sizes[0]?.stock ?? 0
+        if (sizeStock < item.quantity)
+          return badRequest(
+            `Estoque insuficiente para "${product.name}" (${item.color} / ${item.size}). Disponível: ${sizeStock}`
+          )
+      } else {
+        if (product.stock < item.quantity)
+          return badRequest(
+            `Estoque insuficiente para "${product.name}". Disponível: ${product.stock}`
+          )
       }
     }
 
+    // ── 2. Compute subtotal server-side ─────────────────────
+    const subtotal = items.reduce((sum, item) => {
+      const p = dbProducts.find((p) => p.id === item.productId)!
+      return sum + p.price * item.quantity
+    }, 0)
+
+    // ── 3. Validate shippingCost server-side (#7) ────────────
+    // If DELIVERY with shippingCost=0, verify the order qualifies for free shipping
+    const resolvedShippingCost = shippingCost
+    if (orderData.deliveryType === 'DELIVERY' && shippingCost === 0) {
+      const freightConfig = await prisma.freightConfig.findFirst()
+      const freeAbove = freightConfig?.freeAbove ?? null
+      if (freeAbove === null || subtotal < freeAbove) {
+        return badRequest('Custo de frete inválido para entrega')
+      }
+      // subtotal >= freeAbove → free shipping is legitimately zero
+    }
+
+    // ── 4. Pre-validate coupon (non-atomic, for early UX feedback) ──
+    if (normalizedCode) {
+      const coupon = await prisma.coupon.findUnique({ where: { code: normalizedCode } })
+      if (!coupon || !coupon.isActive) return badRequest('Cupom inválido ou não aplicável')
+      if (coupon.expiresAt && new Date() > coupon.expiresAt)
+        return badRequest('Cupom inválido ou não aplicável')
+      if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses)
+        return badRequest('Cupom inválido ou não aplicável')
+    }
+
+    // ── 5. Transaction: atomic stock decrement + coupon read + order create ──
     const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
+      // Atomically decrement stock — guard prevents negative stock
+      for (const item of items) {
+        const p = dbProducts.find((p) => p.id === item.productId)!
+
+        if (item.size && item.color) {
+          // Decrement variant size stock
+          const variant = await tx.productVariant.findFirst({
+            where: { productId: item.productId, colorName: item.color },
+            select: { id: true },
+          })
+          if (!variant) throw new Error(`Cor "${item.color}" não encontrada para "${p.name}"`)
+
+          const sizeResult = await tx.variantSizeStock.updateMany({
+            where: { variantId: variant.id, size: item.size, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
+          })
+          if (sizeResult.count === 0)
+            throw new Error(`Estoque insuficiente para "${p.name}" (${item.color} / ${item.size})`)
+        }
+
+        // Always decrement the product total stock
+        const result = await tx.product.updateMany({
+          where: { id: item.productId, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } },
+        })
+        if (result.count === 0) throw new Error(`Estoque insuficiente para "${p.name}"`)
+      }
+
+      // Read coupon INSIDE the transaction to get authoritative value (TOCTOU fix #10)
+      let discountAmount = 0
+      if (normalizedCode) {
+        const coupon = await tx.coupon.findUnique({ where: { code: normalizedCode } })
+        if (!coupon || !coupon.isActive) throw new Error('Cupom não pôde ser aplicado')
+        if (coupon.expiresAt && new Date() > coupon.expiresAt) throw new Error('Cupom expirado')
+        if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses)
+          throw new Error('Cupom esgotado')
+
+        discountAmount =
+          coupon.type === 'PERCENTAGE'
+            ? (subtotal * coupon.value) / 100
+            : Math.min(coupon.value, subtotal)
+
+        // Atomically consume coupon
+        const consumed = await tx.$executeRaw`
+          UPDATE "Coupon"
+          SET "usedCount" = "usedCount" + 1
+          WHERE code = ${normalizedCode}
+            AND "isActive" = true
+            AND ("expiresAt" IS NULL OR "expiresAt" > NOW())
+            AND ("maxUses" IS NULL OR "usedCount" < "maxUses")
+        `
+        if (consumed === 0) throw new Error('Cupom não pôde ser aplicado (esgotado ou expirado)')
+      }
+
+      const total = Math.max(0, subtotal - discountAmount + resolvedShippingCost)
+
+      return tx.order.create({
         data: {
           ...orderData,
+          couponCode: normalizedCode,
+          discountAmount,
+          shippingCost: resolvedShippingCost,
+          shippingService: shippingService ?? null,
+          total,
           items: {
-            create: items.map(({ productId, productName, quantity, price }) => ({
-              productId,
-              productName,
-              quantity,
-              price,
-            })),
+            create: items.map((item) => {
+              const p = dbProducts.find((p) => p.id === item.productId)!
+              return {
+                productId: item.productId,
+                productName: p.name,
+                quantity: item.quantity,
+                price: p.price,
+                size: item.size ?? null,
+                color: item.color ?? null,
+              }
+            }),
           },
         },
         include: { items: true },
       })
-
-      // Decrement stock for each item
-      await Promise.all(
-        items.map((item) =>
-          tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { decrement: item.quantity } },
-          })
-        )
-      )
-
-      // Increment coupon usage if one was applied
-      if (orderData.couponCode) {
-        await tx.coupon.updateMany({
-          where: { code: orderData.couponCode.toUpperCase().trim(), isActive: true },
-          data: { usedCount: { increment: 1 } },
-        })
-      }
-
-      return newOrder
     })
 
     return created(order)
   } catch (e) {
+    const msg = e instanceof Error ? e.message : undefined
+    if (msg && (msg.includes('Cupom') || msg.includes('Estoque'))) return badRequest(msg)
     return internalError(e)
   }
 }

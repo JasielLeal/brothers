@@ -1,0 +1,2 @@
+ALTER TABLE "OrderItem" ADD COLUMN "size" TEXT;
+ALTER TABLE "OrderItem" ADD COLUMN "color" TEXT;

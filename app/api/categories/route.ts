@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { auth } from '@/auth'
-import { ok, created, badRequest, unauthorized, internalError } from '@/lib/api-response'
+import { ok, created, badRequest, internalError } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth-guard'
 
 const createSchema = z.object({
   name: z.string().min(2),
@@ -25,8 +25,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) return unauthorized()
+    const { error } = await requireAdmin()
+    if (error) return error
 
     const body = await req.json()
     const parsed = createSchema.safeParse(body)

@@ -485,9 +485,10 @@ export default function AnalyticsPage() {
     const map = new Map<string, { name: string; revenue: number }>()
     confirmedOrders.forEach((o) => {
       o.items.forEach((item) => {
-        const e = map.get(item.productId) ?? { name: item.productName, revenue: 0 }
+        const key = item.productId ?? item.productName
+        const e = map.get(key) ?? { name: item.productName, revenue: 0 }
         e.revenue += item.price * item.quantity
-        map.set(item.productId, e)
+        map.set(key, e)
       })
     })
     return Array.from(map.values())

@@ -1,10 +1,12 @@
 export interface OrderItem {
   id: string
-  productId: string
+  productId: string | null
   productName: string
   quantity: number
   price: number
-  product?: { images: string[] }
+  size?: string | null
+  color?: string | null
+  product?: { images: string[] } | null
 }
 
 export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
@@ -20,6 +22,8 @@ export interface Order {
   items: OrderItem[]
   total: number
   discountAmount: number
+  shippingCost?: number
+  shippingService?: string | null
   couponCode?: string | null
   status: OrderStatus
   street?: string | null
@@ -31,15 +35,25 @@ export interface Order {
   updatedAt: string
 }
 
+export interface CreateOrderItemPayload {
+  productId: string
+  productName: string
+  quantity: number
+  size?: string | null
+  color?: string | null
+  // price intentionally omitted — server reads from DB
+}
+
 export interface CreateOrderPayload {
   customerName: string
   customerPhone: string
   paymentMethod: PaymentMethod
   deliveryType: DeliveryType
-  items: Omit<OrderItem, 'id' | 'product'>[]
-  total: number
+  items: CreateOrderItemPayload[]
   discountAmount?: number
   couponCode?: string | null
+  shippingCost?: number
+  shippingService?: string | null
   street?: string | null
   city?: string | null
   state?: string | null

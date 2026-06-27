@@ -93,7 +93,7 @@ function StatsCarousel({ stats }: { stats: StatItem[] }) {
 }
 
 export default function AdminProductsPage() {
-  const PAGE_SIZE = 5
+  const PAGE_SIZE = 10
 
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -428,19 +428,43 @@ export default function AdminProductsPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                  p === page
-                    ? 'bg-[#4A6CF7] text-white shadow-sm'
-                    : 'text-gray-500 hover:bg-white hover:shadow-sm'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+            {(() => {
+              const pages: (number | '...')[] = []
+              const delta = 2
+              const left = page - delta
+              const right = page + delta
+
+              for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+                  pages.push(i)
+                } else if (pages[pages.length - 1] !== '...') {
+                  pages.push('...')
+                }
+              }
+
+              return pages.map((p, idx) =>
+                p === '...' ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="flex h-8 w-6 items-center justify-center text-xs text-gray-400"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                      p === page
+                        ? 'bg-[#4A6CF7] text-white shadow-sm'
+                        : 'text-gray-500 hover:bg-white hover:shadow-sm'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )
+            })()}
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}

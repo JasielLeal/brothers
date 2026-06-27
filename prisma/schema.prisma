@@ -8,12 +8,17 @@ datasource db {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
+enum UserRole {
+  ADMIN
+  VIEWER
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
   passwordHash String
-  role         String   @default("ADMIN")
+  role         UserRole @default(VIEWER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -60,20 +65,58 @@ model Product {
   stock         Int         @default(0)
   rating        Float       @default(0)
   reviewsCount  Int         @default(0)
-  barcode        String?     @unique
-  brandId        String?
-  brand          Brand?       @relation(fields: [brandId], references: [id])
-  typeId         String?
-  type           ProductType? @relation(fields: [typeId], references: [id])
-  costPrice      Float?
-  marginPercent  Float?
-  supplierId     String?
-  supplier       Supplier?   @relation(fields: [supplierId], references: [id])
-  isActive       Boolean     @default(true)
-  isFeatured     Boolean     @default(false)
-  orderItems     OrderItem[]
+  barcode       String?     @unique
+  brandId       String?
+  brand         Brand?      @relation(fields: [brandId], references: [id])
+  typeId        String?
+  type          ProductType? @relation(fields: [typeId], references: [id])
+  costPrice     Float?
+  marginPercent Float?
+  supplierId    String?
+  weight        Float?
+  length        Float?
+  width         Float?
+  height        Float?
+  supplier      Supplier?   @relation(fields: [supplierId], references: [id])
+  isActive      Boolean     @default(true)
+  isFeatured    Boolean     @default(false)
+  orderItems    OrderItem[]
+  variants      ProductVariant[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([typeId])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([isActive, isFeatured])
+  @@index([createdAt])
+}
+
+model ProductVariant {
+  id        String             @id @default(cuid())
+  productId String
+  product   Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  colorName String
+  colorHex  String?
+  images    String[]
+  barcode   String?            @unique
+  sizes     VariantSizeStock[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([productId])
+}
+
+model VariantSizeStock {
+  id        String         @id @default(cuid())
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  size      String
+  stock     Int            @default(0)
+
+  @@index([variantId])
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
@@ -85,10 +128,12 @@ model Order {
   paymentMethod PaymentMethod @default(PIX)
   deliveryType  DeliveryType  @default(DELIVERY)
   items         OrderItem[]
-  total          Float
-  discountAmount Float         @default(0)
-  couponCode     String?
-  status        OrderStatus   @default(PENDING)
+  total         Float
+  discountAmount Float        @default(0)
+  couponCode      String?
+  shippingService String?
+  shippingCost    Float   @default(0)
+  status          OrderStatus @default(PENDING)
   street        String?
   city          String?
   state         String?
@@ -96,17 +141,26 @@ model Order {
   notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   orderId     String
-  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product @relation(fields: [productId], references: [id])
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   productName String
   quantity    Int
   price       Float
+  size        String?
+  color       String?
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 enum OrderStatus {
@@ -161,6 +215,9 @@ model Boleto {
   status       BoletoStatus @default(PENDING)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
 }
 
 enum BoletoStatus {
@@ -173,22 +230,37 @@ enum BoletoStatus {
 // ─── Cupons ───────────────────────────────────────────────────────────────────
 
 model Coupon {
-  id            String      @id @default(cuid())
-  code          String      @unique
+  id            String     @id @default(cuid())
+  code          String     @unique
   type          CouponType
   value         Float
   minOrderValue Float?
   maxUses       Int?
-  usedCount     Int         @default(0)
+  usedCount     Int        @default(0)
   expiresAt     DateTime?
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([isActive])
 }
 
 enum CouponType {
   PERCENTAGE
   FIXED
+}
+
+// ─── Frete ────────────────────────────────────────────────────────────────────
+
+model FreightConfig {
+  id            String   @id @default(cuid())
+  originCep     String
+  defaultWeight Float    @default(0.5)
+  defaultHeight Float    @default(10)
+  defaultWidth  Float    @default(15)
+  defaultLength Float    @default(20)
+  freeAbove     Float?
+  updatedAt     DateTime @updatedAt
 }
 
 // ─── Financeiro ───────────────────────────────────────────────────────────────
@@ -202,6 +274,9 @@ model Expense {
   notes       String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+
+  @@index([date])
+  @@index([category])
 }
 
 enum ExpenseCategory {

@@ -188,13 +188,7 @@ export function useDeleteProductType() {
   })
 }
 
-function schemaToInput(
-  data: ProductSchemaInput
-): ProductInput & {
-  costPrice?: number | null
-  marginPercent?: number | null
-  supplierId?: string | null
-} {
+function schemaToInput(data: ProductSchemaInput): ProductInput {
   return {
     name: data.name,
     slug: data.name
@@ -209,6 +203,10 @@ function schemaToInput(
     costPrice: data.costPrice ?? null,
     marginPercent: data.marginPercent ?? null,
     supplierId: data.supplierId ?? null,
+    weight: data.weight ?? null,
+    length: data.length ?? null,
+    width: data.width ?? null,
+    height: data.height ?? null,
     images: data.images,
     categoryId: data.categoryId,
     stock: data.stock,
@@ -229,11 +227,7 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<ProductSchemaInput> }) => {
-      const input: Partial<ProductInput> & {
-        costPrice?: number | null
-        marginPercent?: number | null
-        supplierId?: string | null
-      } = {}
+      const input: Partial<ProductInput> = {}
       if (data.name !== undefined) {
         input.name = data.name
         input.slug = data.name
@@ -249,6 +243,10 @@ export function useUpdateProduct() {
       if ('costPrice' in data) input.costPrice = data.costPrice ?? null
       if ('marginPercent' in data) input.marginPercent = data.marginPercent ?? null
       if ('supplierId' in data) input.supplierId = data.supplierId ?? null
+      if ('weight' in data) input.weight = data.weight ?? null
+      if ('length' in data) input.length = data.length ?? null
+      if ('width' in data) input.width = data.width ?? null
+      if ('height' in data) input.height = data.height ?? null
       if (data.images !== undefined) input.images = data.images
       if (data.categoryId !== undefined) input.categoryId = data.categoryId
       if (data.stock !== undefined) input.stock = data.stock

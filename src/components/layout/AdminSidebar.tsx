@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Truck,
+  Building2,
   X,
   LogOut,
   Layers,
@@ -36,7 +37,8 @@ const BOTTOM_NAV: { href: string; label: string; icon: React.ElementType }[] = [
 const DOCS_NAV = [
   { label: 'Financeiro', icon: Wallet, href: '/admin/financeiro' },
   { label: 'Cupons', icon: Ticket, href: '/admin/cupons' },
-  { label: 'Fornecedores', icon: Truck, href: '/admin/suppliers' },
+  { label: 'Frete', icon: Truck, href: '/admin/frete' },
+  { label: 'Fornecedores', icon: Building2, href: '/admin/suppliers' },
 ]
 
 // ── shared nav content ─────────────────────────────────────────────────────────

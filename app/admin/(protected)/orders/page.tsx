@@ -19,6 +19,7 @@ import {
   Search,
   ShoppingCart,
   Printer,
+  MessageCircle,
 } from 'lucide-react'
 import {
   useAdminOrders,
@@ -107,11 +108,27 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 
 /* ── New Order Modal ──────────────────────────────────────── */
 interface CartItem {
+  cartKey: string
   productId: string
   productName: string
   price: number
   quantity: number
   image?: string
+  color?: string
+  colorHex?: string
+  size?: string
+}
+
+interface VariantInfo {
+  id: string
+  colorName: string
+  colorHex?: string | null
+  images: string[]
+  sizes: { size: string; stock: number }[]
+}
+
+function makeCartKey(productId: string, color?: string, size?: string) {
+  return `${productId}::${color ?? ''}::${size ?? ''}`
 }
 
 function NewOrderModal({ onClose }: { onClose: () => void }) {
@@ -128,10 +145,56 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
   const [zipCode, setZipCode] = useState('')
   const [notes, setNotes] = useState('')
 
+  // ── Variant picker ───────────────────────────────────────
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null)
+  const [variantsCache, setVariantsCache] = useState<Record<string, VariantInfo[]>>({})
+  const [loadingVariants, setLoadingVariants] = useState<string | null>(null)
+  const [pickedVariant, setPickedVariant] = useState<VariantInfo | null>(null)
+
+  // ── Barcode lookup ───────────────────────────────────────
+  const [barcodeHit, setBarcodeHit] = useState<{
+    product: { id: string; name: string; price: number; stock: number; images: string[] }
+    color: string
+    colorHex: string | null
+    image: string | null
+    sizes: { size: string; stock: number }[]
+  } | null>(null)
+  const [barcodeChecking, setBarcodeChecking] = useState(false)
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300)
     return () => clearTimeout(t)
   }, [search])
+
+  // Barcode lookup effect — runs when debouncedSearch changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!debouncedSearch.trim()) {
+      setBarcodeHit(null)
+      return
+    }
+    let cancelled = false
+    setBarcodeChecking(true)
+    fetch(`/api/products/barcode?code=${encodeURIComponent(debouncedSearch.trim())}`)
+      .then(async (r) => {
+        if (cancelled) return
+        if (r.ok) {
+          const d = await r.json()
+          setBarcodeHit(d.data ?? d)
+        } else {
+          setBarcodeHit(null)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBarcodeHit(null)
+      })
+      .finally(() => {
+        if (!cancelled) setBarcodeChecking(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [debouncedSearch])
 
   const { data: productsData, isLoading: loadingProducts } = useProducts({
     search: debouncedSearch || undefined,
@@ -160,30 +223,64 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
     cart.length > 0 &&
     (deliveryType === 'PICKUP' || street.trim().length > 0)
 
-  function addToCart(product: Product) {
+  async function handleProductClick(product: Product) {
+    if (expandedProductId === product.id) {
+      setExpandedProductId(null)
+      setPickedVariant(null)
+      return
+    }
+    setExpandedProductId(product.id)
+    setPickedVariant(null)
+
+    if (!variantsCache[product.id]) {
+      setLoadingVariants(product.id)
+      try {
+        const res = await fetch(`/api/products/${product.id}/variants`)
+        const d = await res.json()
+        const list: VariantInfo[] = Array.isArray(d) ? d : (d.data ?? [])
+        setVariantsCache((c) => ({ ...c, [product.id]: list }))
+        if (list.length > 0) setPickedVariant(list[0])
+      } finally {
+        setLoadingVariants(null)
+      }
+    } else {
+      const list = variantsCache[product.id]
+      if (list.length > 0) setPickedVariant(list[0])
+    }
+  }
+
+  function addToCartWithVariant(product: Product, variant: VariantInfo | null, size: string) {
+    const color = variant?.colorName
+    const colorHex = variant?.colorHex ?? undefined
+    const image = variant?.images[0] ?? product.images[0]
+    const cartKey = makeCartKey(product.id, color, size)
+
     setCart((prev) => {
-      const existing = prev.find((i) => i.productId === product.id)
+      const existing = prev.find((i) => i.cartKey === cartKey)
       if (existing)
-        return prev.map((i) =>
-          i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
-        )
+        return prev.map((i) => (i.cartKey === cartKey ? { ...i, quantity: i.quantity + 1 } : i))
       return [
         ...prev,
         {
+          cartKey,
           productId: product.id,
           productName: product.name,
           price: product.price,
           quantity: 1,
-          image: product.images[0],
+          image,
+          color,
+          colorHex,
+          size,
         },
       ]
     })
+    setExpandedProductId(null)
+    setPickedVariant(null)
   }
 
-  function updateQty(productId: string, qty: number) {
-    if (qty <= 0) setCart((prev) => prev.filter((i) => i.productId !== productId))
-    else
-      setCart((prev) => prev.map((i) => (i.productId === productId ? { ...i, quantity: qty } : i)))
+  function updateQty(cartKey: string, qty: number) {
+    if (qty <= 0) setCart((prev) => prev.filter((i) => i.cartKey !== cartKey))
+    else setCart((prev) => prev.map((i) => (i.cartKey === cartKey ? { ...i, quantity: qty } : i)))
   }
 
   function handleSubmit() {
@@ -194,13 +291,13 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
         customerPhone: customerPhone.trim(),
         paymentMethod,
         deliveryType,
-        items: cart.map(({ productId, productName, price, quantity }) => ({
+        items: cart.map(({ productId, productName, quantity, color, size }) => ({
           productId,
           productName,
-          price,
           quantity,
+          color: color ?? null,
+          size: size ?? null,
         })),
-        total,
         street: deliveryType === 'DELIVERY' ? street.trim() || null : null,
         city: deliveryType === 'DELIVERY' ? city.trim() || null : null,
         state: deliveryType === 'DELIVERY' ? uf.trim() || null : null,
@@ -241,7 +338,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar produto..."
+                  placeholder="Buscar produto ou digitar barcode..."
                   className="w-full rounded-xl border border-gray-200 bg-gray-100 py-2 pr-4 pl-9 text-sm text-gray-700 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none"
                 />
               </div>
@@ -249,7 +346,97 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
             {/* Resultados */}
             <div className="min-h-0 flex-1 overflow-y-auto px-4">
-              {loadingProducts ? (
+              {/* Barcode hit banner */}
+              {barcodeHit && (
+                <div className="mb-2 space-y-2 rounded-xl border border-green-200 bg-green-50 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                      {barcodeHit.image && (
+                        <Image
+                          src={barcodeHit.image}
+                          alt={barcodeHit.product.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-green-800">
+                        {barcodeHit.product.name}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-xs text-green-600">
+                        {barcodeHit.colorHex && (
+                          <span
+                            className="inline-block h-2.5 w-2.5 rounded-full border border-green-300"
+                            style={{ backgroundColor: barcodeHit.colorHex }}
+                          />
+                        )}
+                        {barcodeHit.color} — selecione o tamanho:
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBarcodeHit(null)
+                        setSearch('')
+                      }}
+                      className="text-green-400 hover:text-green-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {barcodeHit.sizes
+                      .filter((s) => s.stock > 0)
+                      .map((s) => (
+                        <button
+                          key={s.size}
+                          type="button"
+                          onClick={() => {
+                            const hit = barcodeHit
+                            const cartKey = makeCartKey(hit.product.id, hit.color, s.size)
+                            setCart((prev) => {
+                              const existing = prev.find((i) => i.cartKey === cartKey)
+                              if (existing)
+                                return prev.map((i) =>
+                                  i.cartKey === cartKey ? { ...i, quantity: i.quantity + 1 } : i
+                                )
+                              return [
+                                ...prev,
+                                {
+                                  cartKey,
+                                  productId: hit.product.id,
+                                  productName: hit.product.name,
+                                  price: hit.product.price,
+                                  quantity: 1,
+                                  image: hit.image ?? undefined,
+                                  color: hit.color,
+                                  colorHex: hit.colorHex ?? undefined,
+                                  size: s.size,
+                                },
+                              ]
+                            })
+                            setSearch('')
+                            setBarcodeHit(null)
+                          }}
+                          className="flex items-center gap-1 rounded-lg border border-green-300 bg-white px-2.5 py-1 text-xs font-bold text-green-700 transition-colors hover:bg-green-600 hover:text-white"
+                        >
+                          {s.size} <span className="opacity-60">({s.stock})</span>
+                        </button>
+                      ))}
+                    {barcodeHit.sizes.every((s) => s.stock === 0) && (
+                      <p className="text-xs text-red-500">Sem estoque disponível</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {barcodeChecking ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
+                </div>
+              ) : loadingProducts ? (
                 <div className="flex justify-center py-6">
                   <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
                 </div>
@@ -260,37 +447,108 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
               ) : (
                 <div className="space-y-1.5 pb-2">
                   {products.map((p) => {
-                    const inCart = cart.find((i) => i.productId === p.id)
+                    const inCart = cart.filter((i) => i.productId === p.id)
+                    const totalQty = inCart.reduce((s, i) => s + i.quantity, 0)
+                    const isExpanded = expandedProductId === p.id
+                    const pVariants = variantsCache[p.id] ?? []
+                    const availSizes = pickedVariant
+                      ? pickedVariant.sizes.filter((s) => s.stock > 0)
+                      : []
+
                     return (
-                      <button
+                      <div
                         key={p.id}
-                        type="button"
-                        onClick={() => addToCart(p)}
-                        className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-2.5 text-left transition-colors hover:border-[#4A6CF7]/30 hover:bg-[#4A6CF7]/3"
+                        className={`rounded-xl border transition-colors ${isExpanded ? 'border-[#4A6CF7]/40 bg-[#4A6CF7]/3' : 'border-gray-100 bg-white'}`}
                       >
-                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                          {p.images[0] && (
-                            <Image
-                              src={p.images[0]}
-                              alt={p.name}
-                              fill
-                              className="object-cover"
-                              sizes="40px"
-                            />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-gray-800">{p.name}</p>
-                          <p className="text-xs text-gray-400">
-                            {formatCurrency(p.price)} · Estoque: {p.stock}
-                          </p>
-                        </div>
-                        <div
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${inCart ? 'bg-[#4A6CF7] text-white' : 'bg-gray-100 text-gray-400'}`}
+                        {/* Product row */}
+                        <button
+                          type="button"
+                          onClick={() => handleProductClick(p)}
+                          className="flex w-full items-center gap-3 p-2.5 text-left"
                         >
-                          {inCart ? inCart.quantity : <Plus className="h-3 w-3" />}
-                        </div>
-                      </button>
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                            {p.images[0] && (
+                              <Image
+                                src={p.images[0]}
+                                alt={p.name}
+                                fill
+                                className="object-cover"
+                                sizes="40px"
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-gray-800">{p.name}</p>
+                            <p className="text-xs text-gray-400">
+                              {formatCurrency(p.price)} · Estoque: {p.stock}
+                            </p>
+                          </div>
+                          <div
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${totalQty > 0 ? 'bg-[#4A6CF7] text-white' : 'bg-gray-100 text-gray-400'}`}
+                          >
+                            {totalQty > 0 ? totalQty : <Plus className="h-3 w-3" />}
+                          </div>
+                        </button>
+
+                        {/* Inline variant picker */}
+                        {isExpanded && (
+                          <div className="space-y-2 border-t border-[#4A6CF7]/10 px-3 pt-2 pb-3">
+                            {loadingVariants === p.id ? (
+                              <div className="flex justify-center py-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-gray-300" />
+                              </div>
+                            ) : pVariants.length === 0 ? (
+                              <p className="py-1 text-center text-xs text-gray-400">
+                                Sem variantes — produto sem cor/tamanho
+                              </p>
+                            ) : (
+                              <>
+                                {/* Cores */}
+                                <div className="flex flex-wrap gap-1.5">
+                                  {pVariants.map((v) => (
+                                    <button
+                                      key={v.id}
+                                      type="button"
+                                      onClick={() => setPickedVariant(v)}
+                                      className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium transition-all ${pickedVariant?.id === v.id ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}
+                                    >
+                                      <div
+                                        className="h-2.5 w-2.5 rounded-full border border-gray-300"
+                                        style={{ backgroundColor: v.colorHex ?? '#888' }}
+                                      />
+                                      {v.colorName}
+                                    </button>
+                                  ))}
+                                </div>
+
+                                {/* Tamanhos */}
+                                {pickedVariant && (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {availSizes.length > 0 ? (
+                                      availSizes.map((s) => (
+                                        <button
+                                          key={s.size}
+                                          type="button"
+                                          onClick={() =>
+                                            addToCartWithVariant(p, pickedVariant, s.size)
+                                          }
+                                          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-bold text-gray-700 transition-all hover:border-[#4A6CF7] hover:bg-[#4A6CF7] hover:text-white"
+                                        >
+                                          {s.size} <span className="opacity-50">({s.stock})</span>
+                                        </button>
+                                      ))
+                                    ) : (
+                                      <p className="text-xs text-red-400">
+                                        Sem estoque para esta cor
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )
                   })}
                 </div>
@@ -305,7 +563,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                   <div className="space-y-2">
                     {cart.map((item) => (
                       <div
-                        key={item.productId}
+                        key={item.cartKey}
                         className="flex items-center gap-3 rounded-xl bg-gray-50 p-2.5"
                       >
                         <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-gray-200">
@@ -323,15 +581,32 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                           <p className="truncate text-xs font-medium text-gray-800">
                             {item.productName}
                           </p>
-                          <p className="text-xs text-gray-400">
-                            {formatCurrency(item.price)} × {item.quantity} ={' '}
-                            {formatCurrency(item.price * item.quantity)}
-                          </p>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                            <p className="text-xs text-gray-400">
+                              {formatCurrency(item.price)} × {item.quantity}
+                            </p>
+                            {item.color && (
+                              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                                {item.colorHex && (
+                                  <span
+                                    className="inline-block h-2 w-2 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: item.colorHex }}
+                                  />
+                                )}
+                                {item.color}
+                              </span>
+                            )}
+                            {item.size && (
+                              <span className="rounded border border-gray-200 px-1 text-[10px] font-bold text-gray-500">
+                                {item.size}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => updateQty(item.productId, item.quantity - 1)}
+                            onClick={() => updateQty(item.cartKey, item.quantity - 1)}
                             className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300"
                           >
                             <Minus className="h-3 w-3" />
@@ -341,7 +616,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                           </span>
                           <button
                             type="button"
-                            onClick={() => updateQty(item.productId, item.quantity + 1)}
+                            onClick={() => updateQty(item.cartKey, item.quantity + 1)}
                             className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300"
                           >
                             <Plus className="h-3 w-3" />
@@ -688,19 +963,28 @@ function printReceipt(order: Order) {
   <div class="section-title">Resumo Financeiro</div>
   <table style="border:1px solid #ccc;margin-bottom:2px">
     <tr>
-      <td style="padding:5px 10px;border-right:1px solid #ccc;width:33%">
+      <td style="padding:5px 10px;border-right:1px solid #ccc;width:25%">
         <span class="label">Subtotal dos produtos</span>
         <span class="value">${fmt(subtotal)}</span>
       </td>
       ${
+        (order.shippingCost ?? 0) > 0
+          ? `<td style="padding:5px 10px;border-right:1px solid #ccc;width:25%">
+        <span class="label">Frete${order.shippingService ? ` — ${order.shippingService}` : ''}</span>
+        <span class="value">+ ${fmt(order.shippingCost ?? 0)}</span>
+      </td>`
+          : `<td style="padding:5px 10px;border-right:1px solid #ccc;width:25%">
+        <span class="label">Frete</span>
+        <span class="value">Grátis</span>
+      </td>`
+      }
+      ${
         discount > 0
-          ? `
-      <td style="padding:5px 10px;border-right:1px solid #ccc;width:33%">
+          ? `<td style="padding:5px 10px;border-right:1px solid #ccc;width:25%">
         <span class="label">Desconto — cupom ${order.couponCode}</span>
         <span class="value" style="color:#16a34a">- ${fmt(discount)}</span>
       </td>`
-          : `
-      <td style="padding:5px 10px;border-right:1px solid #ccc;width:33%">
+          : `<td style="padding:5px 10px;border-right:1px solid #ccc;width:25%">
         <span class="label">Desconto</span>
         <span class="value">—</span>
       </td>`
@@ -827,9 +1111,21 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                       <p className="truncate text-sm font-medium text-gray-800">
                         {item.productName}
                       </p>
-                      <p className="text-xs text-gray-400">
-                        Qtd: {item.quantity} · {formatCurrency(item.price)} un.
-                      </p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-gray-400">
+                          Qtd: {item.quantity} · {formatCurrency(item.price)} un.
+                        </span>
+                        {item.color && (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                            {item.color}
+                          </span>
+                        )}
+                        {item.size && (
+                          <span className="rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-bold text-gray-600">
+                            {item.size}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm font-semibold text-gray-700">
                       {formatCurrency(item.price * item.quantity)}
@@ -841,21 +1137,47 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
           </div>
 
           <div className="space-y-1.5 rounded-xl bg-[#4A6CF7]/5 px-4 py-3">
-            {order.couponCode && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">
-                  Cupom{' '}
-                  <span className="font-mono font-semibold text-green-600">{order.couponCode}</span>
-                </span>
-                <span className="font-medium text-green-600">
-                  −{formatCurrency(order.discountAmount ?? 0)}
-                </span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Total</p>
-              <p className="text-base font-bold text-[#4A6CF7]">{formatCurrency(order.total)}</p>
-            </div>
+            {(() => {
+              const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0)
+              const shipping = order.shippingCost ?? 0
+              const discount = order.discountAmount ?? 0
+              const hasBreakdown = discount > 0 || shipping > 0
+              return (
+                <>
+                  {hasBreakdown && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Subtotal</span>
+                      <span className="text-gray-700">{formatCurrency(subtotal)}</span>
+                    </div>
+                  )}
+                  {shipping > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">
+                        Frete{order.shippingService ? ` · ${order.shippingService}` : ''}
+                      </span>
+                      <span className="text-gray-700">{formatCurrency(shipping)}</span>
+                    </div>
+                  )}
+                  {discount > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">
+                        Desconto{order.couponCode ? ` (${order.couponCode})` : ''}
+                      </span>
+                      <span className="font-medium text-green-600">
+                        −{formatCurrency(discount)}
+                      </span>
+                    </div>
+                  )}
+                  {hasBreakdown && <div className="h-px bg-[#4A6CF7]/10" />}
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gray-700">Total</p>
+                    <p className="text-base font-bold text-[#4A6CF7]">
+                      {formatCurrency(order.total)}
+                    </p>
+                  </div>
+                </>
+              )
+            })()}
           </div>
 
           <div>
@@ -882,18 +1204,60 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
             </button>
           )}
           {canConfirm && (
-            <button
-              onClick={handleConfirm}
-              disabled={isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4A6CF7] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-60"
-            >
-              {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
-              Confirmar pedido
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleConfirm}
+                disabled={isPending}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#4A6CF7] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-60"
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Confirmar pedido
+              </button>
+              <a
+                href={(() => {
+                  const id = `#${order.id.slice(0, 8).toUpperCase()}`
+                  const itemLines = order.items
+                    .map(
+                      (i) =>
+                        `  • ${i.productName} x ${i.quantity} - ${formatCurrency(i.price * i.quantity)}`
+                    )
+                    .join('\n')
+                  const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0)
+                  const payment =
+                    PAYMENT_LABELS[order.paymentMethod as PaymentMethod] ?? order.paymentMethod
+                  const delivery =
+                    order.deliveryType === 'DELIVERY' ? 'Entrega' : 'Retirada na loja'
+                  const discountLine =
+                    order.discountAmount > 0
+                      ? `Desconto${order.couponCode ? ` (${order.couponCode})` : ''}: -${formatCurrency(order.discountAmount)}\n`
+                      : ''
+                  const subtotalLine =
+                    subtotal !== order.total
+                      ? `Subtotal: ${formatCurrency(subtotal)}\n${discountLine}`
+                      : ''
+                  const msg =
+                    `Ola, ${order.customerName}!\n\n` +
+                    `Seu pedido *${id}* foi recebido na *Brothers Outlet*.\n\n` +
+                    `*Itens do pedido:*\n${itemLines}\n\n` +
+                    `*Pagamento:* ${payment}\n` +
+                    `*Entrega:* ${delivery}\n` +
+                    `${subtotalLine}` +
+                    `*Total: ${formatCurrency(order.total)}*\n\n` +
+                    `Em breve entraremos em contato para confirmar. Obrigado!`
+                  return `https://wa.me/55${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
+                })()}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Contatar no WhatsApp"
+                className="flex items-center justify-center rounded-xl bg-[#25D366] px-3 py-2.5 text-white transition-opacity hover:opacity-90"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </a>
+            </div>
           )}
           {canCancel && (
             <button
@@ -1156,6 +1520,11 @@ export default function AdminOrdersPage() {
                             <p className="text-sm font-bold text-gray-900">
                               {formatCurrency(order.total)}
                             </p>
+                            {(order.shippingCost ?? 0) > 0 && (
+                              <p className="text-[11px] text-gray-400">
+                                frete: {formatCurrency(order.shippingCost!)}
+                              </p>
+                            )}
                             {order.couponCode && (
                               <p className="text-[11px] text-green-600">
                                 cupom: {order.couponCode}
@@ -1172,11 +1541,21 @@ export default function AdminOrdersPage() {
                             key={item.id ?? i}
                             className="flex items-center justify-between text-xs"
                           >
-                            <span className="text-gray-500">
+                            <span className="flex flex-wrap items-center gap-1 text-gray-500">
                               {item.productName}
-                              <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-gray-400">
+                              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-400">
                                 ×{item.quantity}
                               </span>
+                              {item.color && (
+                                <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-400">
+                                  {item.color}
+                                </span>
+                              )}
+                              {item.size && (
+                                <span className="rounded border border-gray-200 px-1 py-0.5 text-[10px] font-bold text-gray-500">
+                                  {item.size}
+                                </span>
+                              )}
                             </span>
                             <span className="font-medium text-gray-700">
                               {formatCurrency(item.price * item.quantity)}

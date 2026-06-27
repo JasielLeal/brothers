@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { auth } from '@/auth'
-import { ok, badRequest, unauthorized, notFound, internalError } from '@/lib/api-response'
+import { ok, badRequest, notFound, internalError } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth-guard'
 
 const updateSchema = z.object({
   isActive: z.boolean().optional(),
@@ -12,8 +12,8 @@ const updateSchema = z.object({
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
-    if (!session?.user) return unauthorized()
+    const { error } = await requireAdmin()
+    if (error) return error
 
     const { id } = await params
     const body = await req.json()
@@ -38,8 +38,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
-    if (!session?.user) return unauthorized()
+    const { error } = await requireAdmin()
+    if (error) return error
 
     const { id } = await params
     const existing = await prisma.coupon.findUnique({ where: { id } })

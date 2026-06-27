@@ -2,9 +2,7 @@ export interface Supplier {
   id: string
   name: string
   contactName: string
-  email: string
   phone: string
-  cnpj: string
   categories: string[]
   isActive: boolean
   createdAt: string
@@ -14,9 +12,7 @@ export interface Supplier {
 export interface SupplierInput {
   name: string
   contactName: string
-  email: string
   phone: string
-  cnpj: string
   categories: string[]
   isActive: boolean
 }

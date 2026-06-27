@@ -3,13 +3,20 @@ import { persist } from 'zustand/middleware'
 import type { CartItem } from '@/features/cart/types/cart.types'
 import type { Product } from '@/features/products/types/product.types'
 
+interface AddItemOpts {
+  size?: string
+  color?: string
+  colorHex?: string
+  image?: string
+}
+
 interface CartStore {
   items: CartItem[]
   total: number
   itemCount: number
-  addItem: (product: Product, quantity?: number) => void
-  removeItem: (productId: string) => void
-  updateQuantity: (productId: string, quantity: number) => void
+  addItem: (product: Product, quantity?: number, opts?: AddItemOpts) => void
+  removeItem: (cartKey: string) => void
+  updateQuantity: (cartKey: string, quantity: number) => void
   clearCart: () => void
 }
 
@@ -19,6 +26,12 @@ function calculateTotals(items: CartItem[]) {
   return { total, itemCount }
 }
 
+function makeKey(productId: string, opts?: AddItemOpts) {
+  const color = opts?.color ?? ''
+  const size = opts?.size ?? ''
+  return `${productId}::${color}::${size}`
+}
+
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
@@ -26,34 +39,46 @@ export const useCartStore = create<CartStore>()(
       total: 0,
       itemCount: 0,
 
-      addItem: (product, quantity = 1) => {
+      addItem: (product, quantity = 1, opts) => {
+        const cartKey = makeKey(product.id, opts)
         const { items } = get()
-        const existingItem = items.find((item) => item.product.id === product.id)
+        const existing = items.find((i) => i.cartKey === cartKey)
 
         let updatedItems: CartItem[]
-        if (existingItem) {
-          updatedItems = items.map((item) =>
-            item.product.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
+        if (existing) {
+          updatedItems = items.map((i) =>
+            i.cartKey === cartKey ? { ...i, quantity: i.quantity + quantity } : i
           )
         } else {
-          updatedItems = [...items, { product, quantity }]
+          updatedItems = [
+            ...items,
+            {
+              cartKey,
+              product,
+              quantity,
+              size: opts?.size,
+              color: opts?.color,
+              colorHex: opts?.colorHex,
+              image: opts?.image,
+            },
+          ]
         }
 
         set({ items: updatedItems, ...calculateTotals(updatedItems) })
       },
 
-      removeItem: (productId) => {
-        const updatedItems = get().items.filter((item) => item.product.id !== productId)
+      removeItem: (cartKey) => {
+        const updatedItems = get().items.filter((i) => i.cartKey !== cartKey)
         set({ items: updatedItems, ...calculateTotals(updatedItems) })
       },
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (cartKey, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(productId)
+          get().removeItem(cartKey)
           return
         }
-        const updatedItems = get().items.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item
+        const updatedItems = get().items.map((i) =>
+          i.cartKey === cartKey ? { ...i, quantity } : i
         )
         set({ items: updatedItems, ...calculateTotals(updatedItems) })
       },
@@ -62,8 +87,6 @@ export const useCartStore = create<CartStore>()(
         set({ items: [], total: 0, itemCount: 0 })
       },
     }),
-    {
-      name: 'cart-store',
-    }
+    { name: 'cart-store' }
   )
 )
