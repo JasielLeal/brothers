@@ -4,18 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  Loader2,
-  X,
-  ImagePlus,
-  Trash2,
-  Calculator,
-  Plus,
-  Trash,
-  Palette,
-  Pencil,
-  Upload,
-} from 'lucide-react'
+import { Loader2, X, Trash2, Calculator, Plus, Trash, Palette, Pencil, Upload } from 'lucide-react'
 import { uploadToCloudinary } from '@/lib/upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,11 +35,17 @@ interface ProductFormModalProps {
   onClose: () => void
 }
 
+interface VariantImage {
+  preview: string
+  file?: File
+  url?: string
+}
+
 interface LocalVariant {
   id?: string
   colorName: string
   colorHex: string
-  images: string[]
+  images: VariantImage[]
   sizes: Record<SizeLabel, number>
   _deleted?: boolean
 }
@@ -62,13 +57,21 @@ const EMPTY_VARIANT: LocalVariant = {
   sizes: { PP: 0, P: 0, M: 0, G: 0, GG: 0, XGG: 0 },
 }
 
-function readFileAsDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target?.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(file)
+function revokePendingPreviews(images: VariantImage[]) {
+  images.forEach((img) => {
+    if (img.file) URL.revokeObjectURL(img.preview)
   })
+}
+
+async function resolveVariantImages(images: VariantImage[]): Promise<string[]> {
+  return Promise.all(
+    images.map(async (img) => {
+      if (img.url) return img.url
+      const url = await uploadToCloudinary(img.file as File, 'brothers-outlet/products')
+      URL.revokeObjectURL(img.preview)
+      return url
+    })
+  )
 }
 
 export function ProductFormModal({ open, product, onClose }: ProductFormModalProps) {
@@ -99,8 +102,8 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
       .then((r) => r.json())
       .then((d) => {
         const list = Array.isArray(d) ? d : (d.data ?? [])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setVariants(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           list.map((v: any) => {
             const sizes = { PP: 0, P: 0, M: 0, G: 0, GG: 0, XGG: 0 } as Record<SizeLabel, number>
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,7 +114,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
               id: v.id,
               colorName: v.colorName,
               colorHex: v.colorHex ?? '#000000',
-              images: v.images,
+              images: (v.images as string[]).map((url) => ({ preview: url, url })),
               sizes,
             }
           })
@@ -165,28 +168,25 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
 
   // ── Variant image helpers ────────────────────────────────────────────────────
   const MAX_VARIANT_IMAGES = 5
-  const [uploadingImages, setUploadingImages] = useState(false)
 
-  async function handleVariantFiles(files: FileList | null) {
+  function handleVariantFiles(files: FileList | null) {
     if (!files || files.length === 0) return
     const slots = MAX_VARIANT_IMAGES - variantForm.images.length
     if (slots <= 0) return
     const selected = Array.from(files).slice(0, slots)
-    setUploadingImages(true)
-    try {
-      const urls = await Promise.all(
-        selected.map((f) => uploadToCloudinary(f, 'brothers-outlet/products'))
-      )
-      setVariantForm((f) => ({ ...f, images: [...f.images, ...urls.filter(Boolean)] }))
-    } catch {
-      // upload error — silently ignore partial failures
-    } finally {
-      setUploadingImages(false)
-    }
+    const added: VariantImage[] = selected.map((file) => ({
+      preview: URL.createObjectURL(file),
+      file,
+    }))
+    setVariantForm((f) => ({ ...f, images: [...f.images, ...added] }))
   }
 
   function removeVariantImage(i: number) {
-    setVariantForm((f) => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }))
+    setVariantForm((f) => {
+      const removed = f.images[i]
+      if (removed?.file) URL.revokeObjectURL(removed.preview)
+      return { ...f, images: f.images.filter((_, idx) => idx !== i) }
+    })
   }
 
   function onVariantDragStart(i: number) {
@@ -217,6 +217,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
   }
 
   function cancelVariantForm() {
+    revokePendingPreviews(variantForm.images)
     setEditingVariantIdx(null)
     setVariantForm(EMPTY_VARIANT)
     setVariantError('')
@@ -244,7 +245,9 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
       }
       return next
     })
-    cancelVariantForm()
+    setEditingVariantIdx(null)
+    setVariantForm(EMPTY_VARIANT)
+    setVariantError('')
   }
 
   function deleteVariant(idx: number) {
@@ -253,19 +256,25 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
       if (next[idx].id) {
         next[idx] = { ...next[idx], _deleted: true }
       } else {
+        revokePendingPreviews(next[idx].images)
         next.splice(idx, 1)
       }
       return next
     })
-    if (editingVariantIdx === idx) cancelVariantForm()
+    if (editingVariantIdx === idx) {
+      setEditingVariantIdx(null)
+      setVariantForm(EMPTY_VARIANT)
+      setVariantError('')
+    }
   }
 
   // ── Sync variants after product save ────────────────────────────────────────
-  async function syncVariants(productId: string) {
-    const toDelete = variants.filter((v) => v._deleted && v.id)
-    const toCreate = variants.filter((v) => !v._deleted && !v.id)
-    const toUpdate = variants.filter((v) => !v._deleted && !!v.id)
+  async function syncVariants(productId: string, resolvedVariants: LocalVariant[]) {
+    const toDelete = resolvedVariants.filter((v) => v._deleted && v.id)
+    const toCreate = resolvedVariants.filter((v) => !v._deleted && !v.id)
+    const toUpdate = resolvedVariants.filter((v) => !v._deleted && !!v.id)
     const sizesPayload = (v: LocalVariant) => SIZES.map((s) => ({ size: s, stock: v.sizes[s] }))
+    const imagesPayload = (v: LocalVariant) => v.images.map((img) => img.url as string)
 
     const responses = await Promise.all([
       ...toDelete.map((v) =>
@@ -278,7 +287,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
           body: JSON.stringify({
             colorName: v.colorName,
             colorHex: v.colorHex,
-            images: v.images,
+            images: imagesPayload(v),
             sizes: sizesPayload(v),
           }),
         })
@@ -290,7 +299,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
           body: JSON.stringify({
             colorName: v.colorName,
             colorHex: v.colorHex,
-            images: v.images,
+            images: imagesPayload(v),
             sizes: sizesPayload(v),
           }),
         })
@@ -311,14 +320,26 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
       (sum, v) => sum + Object.values(v.sizes).reduce((a, b) => a + b, 0),
       0
     )
-    // Images = fotos da primeira cor (capa do produto)
-    const coverImages = visibleVariants[0]?.images ?? []
-
-    const payload: ProductInput = { ...data, stock: totalStock, images: coverImages }
 
     setSyncError('')
     setIsSyncing(true)
     try {
+      // Só envia as fotos para o Cloudinary agora, quando a cor é realmente salva
+      const resolvedVariants = await Promise.all(
+        variants.map(async (v) => {
+          if (v._deleted) return v
+          const urls = await resolveVariantImages(v.images)
+          return { ...v, images: urls.map((url) => ({ preview: url, url })) }
+        })
+      )
+      setVariants(resolvedVariants)
+
+      // Images = fotos da primeira cor (capa do produto)
+      const coverImages =
+        resolvedVariants.find((v) => !v._deleted)?.images.map((img) => img.url as string) ?? []
+
+      const payload: ProductInput = { ...data, stock: totalStock, images: coverImages }
+
       let productId: string
       if (product) {
         const updated = await updateProduct({ id: product.id, data: payload })
@@ -327,7 +348,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
         const created = await createProduct(payload)
         productId = created.id
       }
-      await syncVariants(productId)
+      await syncVariants(productId, resolvedVariants)
       onClose()
     } catch (e) {
       setSyncError(e instanceof Error ? e.message : 'Erro ao salvar cores')
@@ -686,7 +707,13 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                               key={i}
                               className="relative h-10 w-10 overflow-hidden rounded-lg bg-gray-200"
                             >
-                              <Image src={img} alt="" fill className="object-cover" sizes="40px" />
+                              <Image
+                                src={img.preview}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="40px"
+                              />
                             </div>
                           ))}
                           {v.images.length > 3 && (
@@ -800,7 +827,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                     <Label>Fotos desta cor *</Label>
                     {variantForm.images.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {variantForm.images.map((src, i) => (
+                        {variantForm.images.map((img, i) => (
                           <div
                             key={i}
                             draggable
@@ -810,7 +837,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                             className="group relative h-14 w-14 cursor-grab overflow-hidden rounded-lg border border-gray-200 active:cursor-grabbing"
                           >
                             <Image
-                              src={src}
+                              src={img.preview}
                               alt={`foto ${i + 1}`}
                               fill
                               className="object-cover"
@@ -833,25 +860,16 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                     {variantForm.images.length < MAX_VARIANT_IMAGES ? (
                       <button
                         type="button"
-                        onClick={() => !uploadingImages && variantFileInputRef.current?.click()}
+                        onClick={() => variantFileInputRef.current?.click()}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                           e.preventDefault()
                           handleVariantFiles(e.dataTransfer.files)
                         }}
-                        disabled={uploadingImages}
-                        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-3 text-sm text-gray-500 transition-colors hover:border-purple-300 hover:text-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-3 text-sm text-gray-500 transition-colors hover:border-purple-300 hover:text-purple-500"
                       >
-                        {uploadingImages ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" /> Enviando para Cloudinary...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4" /> Clique ou arraste ·{' '}
-                            {variantForm.images.length}/{MAX_VARIANT_IMAGES} fotos
-                          </>
-                        )}
+                        <Upload className="h-4 w-4" /> Clique ou arraste ·{' '}
+                        {variantForm.images.length}/{MAX_VARIANT_IMAGES} fotos
                       </button>
                     ) : (
                       <p className="text-center text-xs text-gray-400">
