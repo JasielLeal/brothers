@@ -72,7 +72,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const [selectedSize, setSelectedSize] = useState<SizeLabel | ''>('')
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
-  if (selectedVariant?.id !== prevVariantId) {
+  if ((selectedVariant?.id ?? null) !== prevVariantId) {
     setPrevVariantId(selectedVariant?.id ?? null)
     setSelectedSize('')
     setSelectedImageIndex(0)

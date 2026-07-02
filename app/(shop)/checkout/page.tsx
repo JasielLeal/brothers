@@ -59,6 +59,22 @@ interface ShippingOption {
   days: number
 }
 
+function addBusinessDays(date: Date, days: number): Date {
+  const result = new Date(date)
+  let added = 0
+  while (added < days) {
+    result.setDate(result.getDate() + 1)
+    const dow = result.getDay()
+    if (dow !== 0 && dow !== 6) added++
+  }
+  return result
+}
+
+function formatDeliveryDate(date: Date): string {
+  const str = date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '')
+  return str.replace(/(\w+)$/, (m) => m.charAt(0).toUpperCase() + m.slice(1))
+}
+
 function Field({
   label,
   error,
@@ -261,9 +277,11 @@ export default function CheckoutPage() {
         return
       }
       const opts: ShippingOption[] = Array.isArray(json) ? json : (json.data ?? [])
-      setShippingOptions(opts)
+      const pac = opts.find((o) => o.name.toLowerCase().includes('pac')) ?? opts[0] ?? null
+      setShippingOptions(pac ? [pac] : [])
       setLastCepQueried(cleanCep)
-      if (opts.length === 1) setSelectedShipping(opts[0])
+      if (pac) setSelectedShipping(pac)
+      else setShippingError('Nenhuma opção de frete disponível para este CEP')
     } catch {
       setShippingError('Erro de conexão ao calcular frete')
     } finally {
@@ -663,9 +681,9 @@ export default function CheckoutPage() {
             {/* Step 2: Frete */}
             {step === 2 && (
               <div className="rounded-2xl border border-white/10 bg-[#1a1a1a] p-6">
-                <h2 className="mb-1 text-base font-bold text-white">Escolha o frete</h2>
+                <h2 className="mb-1 text-base font-bold text-white">Frete</h2>
                 <p className="mb-5 text-sm text-white/40">
-                  Opções disponíveis para o CEP <span className="text-white/60">{zipCode}</span>.
+                  Envio via PAC para o CEP <span className="text-white/60">{zipCode}</span>.
                 </p>
 
                 {shippingLoading && (
@@ -689,45 +707,42 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {shippingOptions && shippingOptions.length > 0 && (
-                  <div className="space-y-2">
-                    {shippingOptions.map((opt) => (
-                      <label
-                        key={opt.id}
-                        className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 transition-all ${
-                          selectedShipping?.id === opt.id
-                            ? 'border-[#4a9fd4] bg-[#4a9fd4]/10'
-                            : 'border-white/10 hover:border-white/20'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="shippingOption"
-                          className="sr-only"
-                          checked={selectedShipping?.id === opt.id}
-                          onChange={() => {
-                            setSelectedShipping(opt)
-                            setShippingError('')
-                          }}
-                        />
+                {selectedShipping &&
+                  (() => {
+                    const today = new Date()
+                    const minDate = formatDeliveryDate(
+                      addBusinessDays(today, Math.max(1, selectedShipping.days - 2))
+                    )
+                    const maxDate = formatDeliveryDate(
+                      addBusinessDays(today, selectedShipping.days)
+                    )
+                    return (
+                      <div className="flex items-center justify-between rounded-xl border-2 border-[#4a9fd4] bg-[#4a9fd4]/10 px-4 py-3">
                         <div className="flex items-center gap-3">
                           <Truck className="h-4 w-4 text-white/40" />
                           <div>
-                            <p className="text-sm font-semibold text-white">{opt.name}</p>
-                            <p className="text-xs text-white/40">
-                              {opt.company} · até {opt.days} dias úteis
+                            <p className="text-sm font-semibold text-white">
+                              {selectedShipping.name}{' '}
+                              <span className="font-normal text-white/40">
+                                · {selectedShipping.company}
+                              </span>
+                            </p>
+                            <p className="text-xs text-white/60">
+                              Chegará entre <span className="text-green-400">{minDate}</span> e{' '}
+                              <span className="text-green-400">{maxDate}</span>
                             </p>
                           </div>
                         </div>
                         <span
-                          className={`text-sm font-bold ${opt.price === 0 ? 'text-green-400' : 'text-white'}`}
+                          className={`text-sm font-bold ${selectedShipping.price === 0 ? 'text-green-400' : 'text-white'}`}
                         >
-                          {opt.price === 0 ? 'Grátis' : formatCurrency(opt.price)}
+                          {selectedShipping.price === 0
+                            ? 'Grátis'
+                            : formatCurrency(selectedShipping.price)}
                         </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
+                      </div>
+                    )
+                  })()}
 
                 {!shippingLoading && !shippingOptions && !shippingError && (
                   <button

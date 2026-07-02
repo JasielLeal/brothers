@@ -168,8 +168,8 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
   // Barcode lookup effect — runs when debouncedSearch changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!debouncedSearch.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBarcodeHit(null)
       return
     }
@@ -1231,6 +1231,11 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                     PAYMENT_LABELS[order.paymentMethod as PaymentMethod] ?? order.paymentMethod
                   const delivery =
                     order.deliveryType === 'DELIVERY' ? 'Entrega' : 'Retirada na loja'
+                  const address = order.street
+                    ? `${order.street}${order.city ? `, ${order.city}` : ''}${order.state ? ` — ${order.state}` : ''}${order.zipCode ? `, ${order.zipCode}` : ''}`
+                    : ''
+                  const addressLine =
+                    order.deliveryType === 'DELIVERY' && address ? `*Endereço:* ${address}\n` : ''
                   const discountLine =
                     order.discountAmount > 0
                       ? `Desconto${order.couponCode ? ` (${order.couponCode})` : ''}: -${formatCurrency(order.discountAmount)}\n`
@@ -1240,11 +1245,12 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                       ? `Subtotal: ${formatCurrency(subtotal)}\n${discountLine}`
                       : ''
                   const msg =
-                    `Ola, ${order.customerName}!\n\n` +
+                    `Olá, ${order.customerName}!\n\n` +
                     `Seu pedido *${id}* foi recebido na *Brothers Outlet*.\n\n` +
                     `*Itens do pedido:*\n${itemLines}\n\n` +
                     `*Pagamento:* ${payment}\n` +
                     `*Entrega:* ${delivery}\n` +
+                    `${addressLine}` +
                     `${subtotalLine}` +
                     `*Total: ${formatCurrency(order.total)}*\n\n` +
                     `Em breve entraremos em contato para confirmar. Obrigado!`

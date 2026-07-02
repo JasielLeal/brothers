@@ -1,9 +1,11 @@
 import type { NextConfig } from 'next'
 
 // Content-Security-Policy: allows same-origin scripts + Cloudinary images + inline styles (Tailwind)
+const isDev = process.env.NODE_ENV === 'development'
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'", // unsafe-inline needed for Next.js hydration chunks
+  // unsafe-inline needed for Next.js hydration chunks; unsafe-eval only in dev (React debug features, never used in prod)
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'", // Tailwind injects inline styles
   "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://picsum.photos",
   "font-src 'self'",
