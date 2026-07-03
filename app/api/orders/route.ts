@@ -138,60 +138,97 @@ export async function POST(req: NextRequest) {
 
     // ── 4. Pre-validate coupon (non-atomic, for early UX feedback) ──
     if (normalizedCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { code: normalizedCode } })
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: normalizedCode },
+        include: { products: { select: { productId: true } } },
+      })
       if (!coupon || !coupon.isActive) return badRequest('Cupom inválido ou não aplicável')
       if (coupon.expiresAt && new Date() > coupon.expiresAt)
         return badRequest('Cupom inválido ou não aplicável')
       if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses)
         return badRequest('Cupom inválido ou não aplicável')
+      if (coupon.products.length > 0) {
+        const eligibleIds = new Set(coupon.products.map((p) => p.productId))
+        const eligibleQty = items
+          .filter((i) => eligibleIds.has(i.productId))
+          .reduce((sum, i) => sum + i.quantity, 0)
+        if (coupon.minQuantity !== null && eligibleQty < coupon.minQuantity)
+          return badRequest(
+            `Este cupom exige pelo menos ${coupon.minQuantity} unidade(s) dos produtos participantes`
+          )
+        if (eligibleQty === 0) return badRequest('Cupom inválido ou não aplicável')
+      }
     }
 
     // ── 5. Transaction: atomic stock decrement + coupon read + order create ──
-    const order = await prisma.$transaction(async (tx) => {
-      // Atomically decrement stock — guard prevents negative stock
-      for (const item of items) {
-        const p = dbProducts.find((p) => p.id === item.productId)!
+    const order = await prisma.$transaction(
+      async (tx) => {
+        // Atomically decrement stock — guard prevents negative stock
+        for (const item of items) {
+          const p = dbProducts.find((p) => p.id === item.productId)!
 
-        if (item.size && item.color) {
-          // Decrement variant size stock
-          const variant = await tx.productVariant.findFirst({
-            where: { productId: item.productId, colorName: item.color },
-            select: { id: true },
-          })
-          if (!variant) throw new Error(`Cor "${item.color}" não encontrada para "${p.name}"`)
+          if (item.size && item.color) {
+            // Decrement variant size stock
+            const variant = await tx.productVariant.findFirst({
+              where: { productId: item.productId, colorName: item.color },
+              select: { id: true },
+            })
+            if (!variant) throw new Error(`Cor "${item.color}" não encontrada para "${p.name}"`)
 
-          const sizeResult = await tx.variantSizeStock.updateMany({
-            where: { variantId: variant.id, size: item.size, stock: { gte: item.quantity } },
+            const sizeResult = await tx.variantSizeStock.updateMany({
+              where: { variantId: variant.id, size: item.size, stock: { gte: item.quantity } },
+              data: { stock: { decrement: item.quantity } },
+            })
+            if (sizeResult.count === 0)
+              throw new Error(
+                `Estoque insuficiente para "${p.name}" (${item.color} / ${item.size})`
+              )
+          }
+
+          // Always decrement the product total stock
+          const result = await tx.product.updateMany({
+            where: { id: item.productId, stock: { gte: item.quantity } },
             data: { stock: { decrement: item.quantity } },
           })
-          if (sizeResult.count === 0)
-            throw new Error(`Estoque insuficiente para "${p.name}" (${item.color} / ${item.size})`)
+          if (result.count === 0) throw new Error(`Estoque insuficiente para "${p.name}"`)
         }
 
-        // Always decrement the product total stock
-        const result = await tx.product.updateMany({
-          where: { id: item.productId, stock: { gte: item.quantity } },
-          data: { stock: { decrement: item.quantity } },
-        })
-        if (result.count === 0) throw new Error(`Estoque insuficiente para "${p.name}"`)
-      }
+        // Read coupon INSIDE the transaction to get authoritative value (TOCTOU fix #10)
+        let discountAmount = 0
+        if (normalizedCode) {
+          const coupon = await tx.coupon.findUnique({
+            where: { code: normalizedCode },
+            include: { products: { select: { productId: true } } },
+          })
+          if (!coupon || !coupon.isActive) throw new Error('Cupom não pôde ser aplicado')
+          if (coupon.expiresAt && new Date() > coupon.expiresAt) throw new Error('Cupom expirado')
+          if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses)
+            throw new Error('Cupom esgotado')
 
-      // Read coupon INSIDE the transaction to get authoritative value (TOCTOU fix #10)
-      let discountAmount = 0
-      if (normalizedCode) {
-        const coupon = await tx.coupon.findUnique({ where: { code: normalizedCode } })
-        if (!coupon || !coupon.isActive) throw new Error('Cupom não pôde ser aplicado')
-        if (coupon.expiresAt && new Date() > coupon.expiresAt) throw new Error('Cupom expirado')
-        if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses)
-          throw new Error('Cupom esgotado')
+          let discountBase = subtotal
+          if (coupon.products.length > 0) {
+            const eligibleIds = new Set(coupon.products.map((p) => p.productId))
+            const eligibleItems = items.filter((i) => eligibleIds.has(i.productId))
+            const eligibleQty = eligibleItems.reduce((sum, i) => sum + i.quantity, 0)
+            if (coupon.minQuantity !== null && eligibleQty < coupon.minQuantity)
+              throw new Error(
+                `Cupom exige pelo menos ${coupon.minQuantity} unidade(s) dos produtos participantes`
+              )
+            if (eligibleQty === 0) throw new Error('Cupom não pôde ser aplicado')
 
-        discountAmount =
-          coupon.type === 'PERCENTAGE'
-            ? (subtotal * coupon.value) / 100
-            : Math.min(coupon.value, subtotal)
+            discountBase = eligibleItems.reduce((sum, i) => {
+              const p = dbProducts.find((p) => p.id === i.productId)!
+              return sum + p.price * i.quantity
+            }, 0)
+          }
 
-        // Atomically consume coupon
-        const consumed = await tx.$executeRaw`
+          discountAmount =
+            coupon.type === 'PERCENTAGE'
+              ? (discountBase * coupon.value) / 100
+              : Math.min(coupon.value, discountBase)
+
+          // Atomically consume coupon
+          const consumed = await tx.$executeRaw`
           UPDATE "Coupon"
           SET "usedCount" = "usedCount" + 1
           WHERE code = ${normalizedCode}
@@ -199,36 +236,38 @@ export async function POST(req: NextRequest) {
             AND ("expiresAt" IS NULL OR "expiresAt" > NOW())
             AND ("maxUses" IS NULL OR "usedCount" < "maxUses")
         `
-        if (consumed === 0) throw new Error('Cupom não pôde ser aplicado (esgotado ou expirado)')
-      }
+          if (consumed === 0) throw new Error('Cupom não pôde ser aplicado (esgotado ou expirado)')
+        }
 
-      const total = Math.max(0, subtotal - discountAmount + resolvedShippingCost)
+        const total = Math.max(0, subtotal - discountAmount + resolvedShippingCost)
 
-      return tx.order.create({
-        data: {
-          ...orderData,
-          couponCode: normalizedCode,
-          discountAmount,
-          shippingCost: resolvedShippingCost,
-          shippingService: shippingService ?? null,
-          total,
-          items: {
-            create: items.map((item) => {
-              const p = dbProducts.find((p) => p.id === item.productId)!
-              return {
-                productId: item.productId,
-                productName: p.name,
-                quantity: item.quantity,
-                price: p.price,
-                size: item.size ?? null,
-                color: item.color ?? null,
-              }
-            }),
+        return tx.order.create({
+          data: {
+            ...orderData,
+            couponCode: normalizedCode,
+            discountAmount,
+            shippingCost: resolvedShippingCost,
+            shippingService: shippingService ?? null,
+            total,
+            items: {
+              create: items.map((item) => {
+                const p = dbProducts.find((p) => p.id === item.productId)!
+                return {
+                  productId: item.productId,
+                  productName: p.name,
+                  quantity: item.quantity,
+                  price: p.price,
+                  size: item.size ?? null,
+                  color: item.color ?? null,
+                }
+              }),
+            },
           },
-        },
-        include: { items: true },
-      })
-    })
+          include: { items: true },
+        })
+      },
+      { timeout: 15000 }
+    )
 
     return created(order)
   } catch (e) {

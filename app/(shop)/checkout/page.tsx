@@ -238,7 +238,14 @@ export default function CheckoutPage() {
       const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, orderTotal: total }),
+        body: JSON.stringify({
+          code,
+          orderTotal: total,
+          items: items.map((item) => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+          })),
+        }),
       })
       const json = await res.json()
       if (!res.ok) {

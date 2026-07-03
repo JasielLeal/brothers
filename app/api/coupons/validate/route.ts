@@ -10,11 +10,12 @@ export async function POST(req: NextRequest) {
     const rl = rateLimit(`coupon:${ip}`, 20, 60 * 60 * 1000)
     if (!rl.allowed) return tooManyRequests(rl.resetInSeconds)
 
-    const { code, orderTotal } = await req.json()
+    const { code, orderTotal, items } = await req.json()
     if (!code) return badRequest('Código obrigatório')
 
     const coupon = await prisma.coupon.findUnique({
       where: { code: String(code).toUpperCase().trim() },
+      include: { products: { select: { productId: true } } },
     })
 
     // Mensagem genérica para todos os casos de falha — evita enumeração
@@ -31,10 +32,35 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    let discountBase = orderTotal
+
+    if (coupon.products.length > 0) {
+      const cartItems: { productId: string; quantity: number }[] = Array.isArray(items) ? items : []
+      const eligibleIds = new Set(coupon.products.map((p) => p.productId))
+      const eligibleItems = cartItems.filter((i) => eligibleIds.has(i.productId))
+      const eligibleQty = eligibleItems.reduce((sum, i) => sum + i.quantity, 0)
+
+      if (coupon.minQuantity !== null && eligibleQty < coupon.minQuantity) {
+        return badRequest(
+          `Este cupom exige pelo menos ${coupon.minQuantity} unidade(s) dos produtos participantes`
+        )
+      }
+      if (eligibleQty === 0) return invalid()
+
+      const dbProducts = await prisma.product.findMany({
+        where: { id: { in: eligibleItems.map((i) => i.productId) } },
+        select: { id: true, price: true },
+      })
+      discountBase = eligibleItems.reduce((sum, i) => {
+        const p = dbProducts.find((p) => p.id === i.productId)
+        return sum + (p ? p.price * i.quantity : 0)
+      }, 0)
+    }
+
     const discount =
       coupon.type === 'PERCENTAGE'
-        ? (orderTotal * coupon.value) / 100
-        : Math.min(coupon.value, orderTotal)
+        ? (discountBase * coupon.value) / 100
+        : Math.min(coupon.value, discountBase)
 
     // Retornar apenas o necessário — nunca o objeto completo do cupom
     return ok({

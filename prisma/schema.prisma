@@ -82,6 +82,7 @@ model Product {
   isFeatured    Boolean     @default(false)
   orderItems    OrderItem[]
   variants      ProductVariant[]
+  couponProducts CouponProduct[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -230,19 +231,33 @@ enum BoletoStatus {
 // ─── Cupons ───────────────────────────────────────────────────────────────────
 
 model Coupon {
-  id            String     @id @default(cuid())
-  code          String     @unique
+  id            String          @id @default(cuid())
+  code          String          @unique
   type          CouponType
   value         Float
   minOrderValue Float?
+  minQuantity   Int?
   maxUses       Int?
-  usedCount     Int        @default(0)
+  usedCount     Int             @default(0)
   expiresAt     DateTime?
-  isActive      Boolean    @default(true)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  isActive      Boolean         @default(true)
+  products      CouponProduct[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([isActive])
+}
+
+model CouponProduct {
+  id        String  @id @default(cuid())
+  couponId  String
+  coupon    Coupon  @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, productId])
+  @@index([couponId])
+  @@index([productId])
 }
 
 enum CouponType {

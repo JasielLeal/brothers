@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import {
   useCoupons,
@@ -8,9 +9,93 @@ import {
   useToggleCoupon,
   useDeleteCoupon,
 } from '@/features/coupons/hooks/useCoupons'
+import { useProducts } from '@/features/products/hooks/useProducts'
 import { formatCurrency } from '@/utils/formatCurrency'
-import type { CouponType, CreateCouponPayload } from '@/features/coupons/types/coupon.types'
-import { Plus, X, Loader2, Trash2, Copy, Check, Tag } from 'lucide-react'
+import type { Coupon, CouponType, CreateCouponPayload } from '@/features/coupons/types/coupon.types'
+import { Plus, X, Loader2, Trash2, Copy, Check, Tag, Search, Package } from 'lucide-react'
+
+/* ── Product picker ───────────────────────────────────── */
+function ProductPicker({
+  selectedIds,
+  onChange,
+}: {
+  selectedIds: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const [search, setSearch] = useState('')
+  const { data, isLoading } = useProducts({ search, limit: 20, isActive: true })
+  const products = data?.data ?? []
+
+  function toggle(id: string) {
+    if (selectedIds.includes(id)) onChange(selectedIds.filter((i) => i !== id))
+    else if (selectedIds.length < 50) onChange([...selectedIds, id])
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus-within:border-[#4A6CF7] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#4A6CF7]/30">
+        <Search className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar produtos..."
+          className="w-full bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
+        />
+      </div>
+
+      {selectedIds.length > 0 && (
+        <p className="mt-1.5 text-[11px] text-gray-400">
+          {selectedIds.length} produto(s) selecionado(s) — máx. 50
+        </p>
+      )}
+
+      <div className="mt-2 max-h-48 space-y-1 overflow-y-auto rounded-xl border border-gray-100 p-1.5">
+        {isLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-4 w-4 animate-spin text-gray-300" />
+          </div>
+        ) : products.length === 0 ? (
+          <p className="py-6 text-center text-xs text-gray-400">Nenhum produto encontrado</p>
+        ) : (
+          products.map((p) => {
+            const checked = selectedIds.includes(p.id)
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => toggle(p.id)}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${checked ? 'bg-[#4A6CF7]/10' : 'hover:bg-gray-50'}`}
+              >
+                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                  {p.images[0] ? (
+                    <Image
+                      src={p.images[0]}
+                      alt={p.name}
+                      fill
+                      className="object-cover"
+                      sizes="32px"
+                    />
+                  ) : (
+                    <Package className="m-auto h-4 w-4 text-gray-300" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-gray-700">{p.name}</p>
+                  <p className="text-[11px] text-gray-400">{formatCurrency(p.price)}</p>
+                </div>
+                <div
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border ${checked ? 'border-[#4A6CF7] bg-[#4A6CF7]' : 'border-gray-300'}`}
+                >
+                  {checked && <Check className="h-3 w-3 text-white" />}
+                </div>
+              </button>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
 
 /* ── Create Modal ─────────────────────────────────────── */
 function CreateCouponModal({ onClose }: { onClose: () => void }) {
@@ -21,10 +106,19 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
   const [maxUses, setMaxUses] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
   const [error, setError] = useState('')
+  const [scopeToProducts, setScopeToProducts] = useState(false)
+  const [productIds, setProductIds] = useState<string[]>([])
+  const [minQuantity, setMinQuantity] = useState('')
 
   const { mutate: create, isPending } = useCreateCoupon()
 
-  const canSubmit = code.trim().length >= 3 && Number(value) > 0
+  const canSubmit =
+    code.trim().length >= 3 &&
+    Number(value) > 0 &&
+    (!scopeToProducts ||
+      (productIds.length > 0 &&
+        Number(minQuantity) > 0 &&
+        Number(minQuantity) <= productIds.length))
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -35,6 +129,8 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
       minOrderValue: minOrder ? Number(minOrder) : null,
       maxUses: maxUses ? Number(maxUses) : null,
       expiresAt: expiresAt || null,
+      productIds: scopeToProducts ? productIds : undefined,
+      minQuantity: scopeToProducts ? Number(minQuantity) : null,
     }
     create(payload, {
       onSuccess: onClose,
@@ -148,6 +244,50 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
               />
             </div>
           </div>
+
+          <div className="rounded-xl border border-gray-200 p-3">
+            <label className="flex cursor-pointer items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-700">Vincular a produtos</p>
+                <p className="text-[11px] text-gray-400">
+                  Desconto só ativa ao comprar uma quantidade mínima destes produtos
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={scopeToProducts}
+                onChange={(e) => {
+                  setScopeToProducts(e.target.checked)
+                  if (!e.target.checked) {
+                    setProductIds([])
+                    setMinQuantity('')
+                  }
+                }}
+                className="h-4 w-4 shrink-0 accent-[#4A6CF7]"
+              />
+            </label>
+
+            {scopeToProducts && (
+              <div className="mt-3 space-y-3">
+                <ProductPicker selectedIds={productIds} onChange={setProductIds} />
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
+                    Quantidade mínima para ativar *
+                  </label>
+                  <input
+                    value={minQuantity}
+                    onChange={(e) => setMinQuantity(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Ex: 3"
+                    inputMode="numeric"
+                    className={inputCls}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    O desconto incide apenas sobre o valor desses produtos no carrinho
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 border-t px-6 py-4">
@@ -189,9 +329,67 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+/* ── Coupon Products Modal ────────────────────────────── */
+function CouponProductsModal({ coupon, onClose }: { coupon: Coupon; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-gray-800">
+              Produtos do cupom <span className="font-mono">{coupon.code}</span>
+            </h2>
+            <p className="mt-0.5 text-xs text-gray-400">
+              Ativa com {coupon.minQuantity}x entre os {coupon.products.length} produto(s) abaixo
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-1.5 overflow-y-auto p-4">
+          {coupon.products.map((cp) => (
+            <div
+              key={cp.productId}
+              className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-gray-50"
+            >
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                {cp.product?.images[0] ? (
+                  <Image
+                    src={cp.product.images[0]}
+                    alt={cp.product.name}
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                  />
+                ) : (
+                  <Package className="m-auto h-4 w-4 text-gray-300" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-700">
+                  {cp.product?.name ?? 'Produto removido'}
+                </p>
+                {cp.product && (
+                  <p className="text-xs text-gray-400">{formatCurrency(cp.product.price)}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Page ────────────────────────────────────────────── */
 export default function CuponsPage() {
   const [createOpen, setCreateOpen] = useState(false)
+  const [viewingProducts, setViewingProducts] = useState<Coupon | null>(null)
   const { data: coupons = [], isLoading } = useCoupons()
   const { mutate: toggle } = useToggleCoupon()
   const { mutate: remove, isPending: deleting } = useDeleteCoupon()
@@ -267,7 +465,7 @@ export default function CuponsPage() {
                   <tr className="border-b border-gray-100 text-left text-xs text-gray-400">
                     <th className="px-5 py-3.5 font-semibold">Código</th>
                     <th className="px-5 py-3.5 font-semibold">Desconto</th>
-                    <th className="px-5 py-3.5 font-semibold">Mín. pedido</th>
+                    <th className="px-5 py-3.5 font-semibold">Regra</th>
                     <th className="px-5 py-3.5 font-semibold">Usos</th>
                     <th className="px-5 py-3.5 font-semibold">Validade</th>
                     <th className="px-5 py-3.5 font-semibold">Status</th>
@@ -291,7 +489,19 @@ export default function CuponsPage() {
                           {c.type === 'PERCENTAGE' ? `${c.value}%` : formatCurrency(c.value)}
                         </td>
                         <td className="px-5 py-3.5 text-gray-500">
-                          {c.minOrderValue ? formatCurrency(c.minOrderValue) : '—'}
+                          {c.products.length > 0 ? (
+                            <button
+                              onClick={() => setViewingProducts(c)}
+                              className="flex items-center gap-1 text-xs text-[#4A6CF7] hover:underline"
+                            >
+                              <Package className="h-3.5 w-3.5" />
+                              {c.minQuantity}x de {c.products.length} produto(s)
+                            </button>
+                          ) : c.minOrderValue ? (
+                            `Pedido mín. ${formatCurrency(c.minOrderValue)}`
+                          ) : (
+                            '—'
+                          )}
                         </td>
                         <td className="px-5 py-3.5 text-gray-500">
                           {c.usedCount}
@@ -356,7 +566,16 @@ export default function CuponsPage() {
                           ? `${c.value}% off`
                           : `${formatCurrency(c.value)} off`}
                       </span>
-                      {c.minOrderValue && <span>Mín: {formatCurrency(c.minOrderValue)}</span>}
+                      {c.products.length > 0 ? (
+                        <button
+                          onClick={() => setViewingProducts(c)}
+                          className="font-semibold text-[#4A6CF7] hover:underline"
+                        >
+                          {c.minQuantity}x de {c.products.length} produto(s)
+                        </button>
+                      ) : (
+                        c.minOrderValue && <span>Mín: {formatCurrency(c.minOrderValue)}</span>
+                      )}
                       <span>
                         {c.usedCount}
                         {c.maxUses ? `/${c.maxUses}` : ''} usos
@@ -389,6 +608,9 @@ export default function CuponsPage() {
       </div>
 
       {createOpen && <CreateCouponModal onClose={() => setCreateOpen(false)} />}
+      {viewingProducts && (
+        <CouponProductsModal coupon={viewingProducts} onClose={() => setViewingProducts(null)} />
+      )}
     </div>
   )
 }
