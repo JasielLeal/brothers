@@ -2,187 +2,60 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { X, Download, Loader2 } from 'lucide-react'
+import JsBarcode from 'jsbarcode'
 import type { Product, ProductVariant, SizeLabel } from '@/features/products/types/product.types'
 import { SIZES } from '@/features/products/types/product.types'
 
-/* ── JsBarcode loader ──────────────────────────────────── */
-type JsBarcodeLib = (el: SVGSVGElement, value: string, opts: object) => void
-
-function loadJsBarcode(): Promise<JsBarcodeLib> {
-  return new Promise((resolve) => {
-    const w = window as Window & { JsBarcode?: JsBarcodeLib }
-    if (w.JsBarcode) {
-      resolve(w.JsBarcode)
-      return
-    }
-    const existing = document.getElementById('jsbarcode-cdn') as HTMLScriptElement | null
-    if (existing) {
-      existing.addEventListener('load', () => resolve(w.JsBarcode!))
-      return
-    }
-    const s = document.createElement('script')
-    s.id = 'jsbarcode-cdn'
-    s.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js'
-    s.onload = () => resolve(w.JsBarcode!)
-    document.head.appendChild(s)
-  })
-}
-
-/* ── Barcode preview (for modal only) ─────────────────── */
-function BarcodePreview({ value }: { value: string }) {
-  const svgRef = useRef<SVGSVGElement>(null)
-
-  useEffect(() => {
-    loadJsBarcode().then((JsBarcode) => {
-      if (!svgRef.current) return
-      JsBarcode(svgRef.current, value, {
-        format: 'EAN13',
-        width: 1.6,
-        height: 44,
-        displayValue: true,
-        fontSize: 10,
-        margin: 0,
-        background: 'transparent',
-        lineColor: '#fff',
-        font: 'monospace',
-        textMargin: 2,
-      })
-    })
-  }, [value])
-
-  return <svg ref={svgRef} style={{ width: '100%' }} />
-}
-
-const CYAN = '#00b4d8'
-const DARK = '#0d0d0d'
+const TAG_BG = '#0a0a0a'
 
 /* ── build self-contained print HTML ──────────────────── */
 function buildPrintHtml(product: Product, barcodeSvgStr: string) {
-  const diagonalLines = `<svg width="100%" height="100%" viewBox="0 0 160 300" preserveAspectRatio="none"
-    style="position:absolute;top:0;left:0;pointer-events:none;">
-    ${Array.from(
-      { length: 8 },
-      (_, i) => `
-      <line x1="-40" y1="${30 + i * 38}" x2="200" y2="${30 + i * 38 - 80}"
-        stroke="${CYAN}" stroke-width="1.5" stroke-opacity="0.18"/>`
-    ).join('')}
-  </svg>`
+  const logoSrc = `${window.location.origin}/logo.png`
+  const qrSrc = `${window.location.origin}/qrcode.png`
 
-  const watermarkB = `<div style="position:absolute;top:6px;right:-8px;font-size:140px;font-weight:900;
-    font-style:italic;color:white;opacity:0.04;line-height:1;pointer-events:none;user-select:none;">B</div>`
+  const tagBase = `background:${TAG_BG};-webkit-print-color-adjust:exact;print-color-adjust:exact;`
 
-  const tagBase = `background:linear-gradient(158deg,${DARK} 0%,#1a1a1a 55%,#111 100%);
-    -webkit-print-color-adjust:exact;print-color-adjust:exact;`
-
-  const hole = `<div style="display:flex;justify-content:center;padding-top:10px;position:relative;">
-    <div style="width:14px;height:14px;border-radius:50%;border:2px solid #2a2a2a;background:#090909;box-shadow:inset 0 1px 3px rgba(0,0,0,.9);"></div>
+  const hole = `<div style="display:flex;justify-content:center;padding-top:12px;">
+    <div style="width:14px;height:14px;border-radius:50%;background:#fff;"></div>
   </div>`
 
+  const website = `<p style="text-align:center;font-size:7px;font-weight:700;letter-spacing:.12em;color:#fff;font-family:Arial,sans-serif;padding-bottom:14px;">WWW.BROTHERSOUTLET.COM.BR</p>`
+
   const front = `
-  <div style="width:58mm;height:100mm;border-radius:7mm;overflow:hidden;position:relative;flex-shrink:0;${tagBase}">
-    ${diagonalLines}${watermarkB}
+  <div style="width:58mm;height:100mm;border-radius:7mm;overflow:hidden;position:relative;flex-shrink:0;
+    display:flex;flex-direction:column;${tagBase}">
     ${hole}
-    <div style="position:relative;display:flex;flex-direction:column;align-items:center;margin-top:10px;">
-      <div style="width:52px;height:52px;border-radius:50%;border:1.5px solid #333;background:#111;
-        display:flex;align-items:center;justify-content:center;box-shadow:0 2px 14px rgba(0,0,0,.7);">
-        <span style="font-size:26px;font-weight:900;font-style:italic;color:#fff;letter-spacing:-1px;">B</span>
-      </div>
-      <p style="margin-top:8px;font-size:14px;font-weight:900;letter-spacing:.38em;color:#fff;font-family:Arial Black,Arial,sans-serif;">BROTHERS</p>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
-        <div style="height:1px;width:20px;background:${CYAN};"></div>
-        <p style="font-size:7.5px;font-weight:700;letter-spacing:.55em;color:${CYAN};font-family:Arial,sans-serif;">OUTLET</p>
-        <div style="height:1px;width:20px;background:${CYAN};"></div>
-      </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+      <img src="${logoSrc}" alt="Brothers" style="width:68px;height:68px;object-fit:contain;" />
+      <p style="font-size:14px;font-weight:800;letter-spacing:.02em;color:#fff;font-family:Arial,sans-serif;">BROTHERS OUTLET</p>
     </div>
-    <div style="display:flex;justify-content:space-around;align-items:center;
-      border-top:1px solid #1e1e1e;border-bottom:1px solid #1e1e1e;
-      padding:8px 8px;margin:12px 0;position:relative;">
-      ${[
-        { icon: '⚡', label: 'PERFORMANCE' },
-        { icon: '✓', label: 'QUALIDADE' },
-        { icon: '◈', label: 'ESTILO' },
-      ]
-        .map(
-          (item, i) => `
-        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;${i < 2 ? `border-right:1px solid #222;padding-right:10px;` : ''}">
-          <span style="font-size:13px;color:${CYAN};">${item.icon}</span>
-          <span style="font-size:5.5px;font-weight:700;letter-spacing:.12em;color:#555;font-family:Arial,sans-serif;">${item.label}</span>
-        </div>`
-        )
-        .join('')}
-    </div>
-    <div style="display:flex;justify-content:center;position:relative;">
-      <div style="border:1.5px solid ${CYAN};border-radius:3px;padding:4px 16px;">
-        <span style="font-size:9px;font-weight:700;letter-spacing:.55em;color:${CYAN};font-family:Arial,sans-serif;">LIFESTYLE</span>
-      </div>
-    </div>
-    <p style="position:relative;text-align:center;font-size:7.5px;font-weight:300;
-      letter-spacing:.22em;color:#4a4a4a;font-family:Arial,sans-serif;margin-top:12px;">VISTA SUA MELHOR VERSÃO.</p>
-    <div style="position:relative;display:flex;justify-content:center;gap:5px;margin-top:6px;">
-      ${[0, 1, 2].map(() => `<div style="height:2px;width:14px;border-radius:2px;background:${CYAN};opacity:.75;"></div>`).join('')}
-    </div>
+    ${website}
   </div>`
 
   const back = `
   <div style="width:58mm;height:100mm;border-radius:7mm;overflow:hidden;position:relative;flex-shrink:0;
     display:flex;flex-direction:column;${tagBase}">
     ${hole}
-    <div style="text-align:center;padding:7px 12px 0;">
-      <p style="font-size:7px;color:#777;letter-spacing:.18em;font-family:Arial,sans-serif;">OBRIGADO POR ESCOLHER</p>
-      <p style="font-size:12px;font-weight:900;color:#fff;letter-spacing:.1em;font-family:Arial Black,Arial,sans-serif;line-height:1.2;">BROTHERS OUTLET!</p>
-      <div style="height:1.5px;background:${CYAN};margin:5px auto 0;width:72%;"></div>
+    <div style="text-align:center;padding-top:14px;">
+      <p style="font-size:8px;color:#fff;font-family:Arial,sans-serif;">Obrigado por escolher</p>
+      <p style="margin-top:2px;font-size:12px;font-weight:800;letter-spacing:.02em;color:#fff;font-family:Arial,sans-serif;">BROTHERS OUTLET</p>
     </div>
-    <div style="padding:6px 10px 0;display:flex;flex-direction:column;gap:4px;">
-      ${[
-        { icon: '✓', text: 'PRODUTO SELECIONADO COM QUALIDADE' },
-        { icon: '◎', text: 'CONFORTO PARA O DIA A DIA' },
-        { icon: '◈', text: 'ESTILO PARA QUALQUER OCASIÃO' },
-      ]
-        .map(
-          (b) => `<div style="display:flex;align-items:center;gap:5px;">
-          <span style="font-size:10px;color:${CYAN};flex-shrink:0;">${b.icon}</span>
-          <span style="font-size:6.5px;font-weight:600;color:#ccc;letter-spacing:.04em;font-family:Arial,sans-serif;">${b.text}</span>
-        </div>`
-        )
-        .join('')}
-    </div>
-    <div style="height:1px;background:#1e1e1e;margin:5px 10px;"></div>
-    <div style="padding:0 10px;">
-      <p style="font-size:6px;font-weight:700;letter-spacing:.28em;color:${CYAN};margin-bottom:3px;font-family:Arial,sans-serif;">SIGA-NOS NAS REDES SOCIAIS</p>
-      <p style="font-size:7px;color:#bbb;font-family:Arial,sans-serif;">⊙ @Brothersoutlet_oficial</p>
-      <p style="font-size:7px;color:#bbb;font-family:Arial,sans-serif;margin-top:1px;">◉ BAÍA FORMOSA-RN</p>
-    </div>
-    <div style="height:1px;background:#1e1e1e;margin:5px 10px;"></div>
-    <div style="padding:0 8px;">
-      <p style="font-size:5.5px;font-weight:700;letter-spacing:.25em;color:#444;margin-bottom:3px;font-family:Arial,sans-serif;">CUIDADOS</p>
-      <div style="display:flex;justify-content:space-between;">
-        ${['LAVAR À MÃO', 'SEM ALVEJANTE', 'SECAR À SOMBRA', 'SEM FERRO']
-          .map(
-            (label) => `
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-            <div style="width:17px;height:17px;border:1.5px solid #3a3a3a;border-radius:3px;"></div>
-            <span style="font-size:4.5px;color:#444;text-align:center;font-family:Arial,sans-serif;max-width:20px;line-height:1.2;">${label}</span>
-          </div>`
-          )
-          .join('')}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;">
+      <div style="background:#fff;border-radius:6px;padding:6px;line-height:0;">
+        <img src="${qrSrc}" alt="QR Code" style="width:70px;height:70px;display:block;" />
       </div>
-    </div>
-    <!-- barcode: black on white for scanning -->
-    <div style="flex:1;display:flex;align-items:flex-end;padding:4px 8px 0;">
-      <div style="background:#fff;border-radius:4px;padding:5px 4px 2px;width:100%;">
+      <p style="font-size:7.5px;color:#fff;font-family:Arial,sans-serif;">@brothersoutlet_oficial</p>
+      <div style="background:#fff;border-radius:6px;padding:5px 6px 2px;width:78%;display:flex;justify-content:center;">
         ${barcodeSvgStr}
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;
-      padding:5px 10px;border-top:1.5px solid ${CYAN};background:rgba(0,180,216,.10);">
-      <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);
-        display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;font-style:italic;color:#fff;font-family:Arial,sans-serif;">B</div>
-      <div style="text-align:right;">
-        <p style="font-size:7.5px;font-weight:900;color:#fff;letter-spacing:.18em;font-family:Arial Black,Arial,sans-serif;">BROTHERS</p>
-        <p style="font-size:5.5px;font-weight:700;color:${CYAN};letter-spacing:.35em;font-family:Arial,sans-serif;">OUTLET</p>
-      </div>
-    </div>
+    ${website}
   </div>`
+
+  // Tile front/back cards (not paired — any front matches any back for the
+  // same barcode) to fill exactly one A4 sheet: 3 columns × 2 rows of
+  // 58×100mm tags fit an A4 portrait page with an 8mm margin.
+  const tiles = Array.from({ length: 3 }, () => front + back).join('')
 
   return `<!DOCTYPE html>
 <html>
@@ -191,13 +64,14 @@ function buildPrintHtml(product: Product, barcodeSvgStr: string) {
   <title>Etiqueta — ${product.name}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-    @page{size:128mm 108mm landscape;margin:4mm;}
-    body{font-family:Arial,sans-serif;background:#d1d5db;display:flex;justify-content:center;
-      align-items:center;gap:8mm;padding:4mm;min-height:100vh;}
-    @media print{body{background:#d1d5db;min-height:unset;}}
+    @page{size:A4 portrait;margin:8mm;}
+    body{font-family:Arial,sans-serif;background:#d1d5db;padding:6mm;}
+    .sheet{display:flex;flex-wrap:wrap;justify-content:flex-start;align-content:flex-start;gap:4mm;}
+    .sheet > div{page-break-inside:avoid;break-inside:avoid;}
+    @media print{body{background:#fff;}}
   </style>
 </head>
-<body>${front}${back}</body>
+<body><div class="sheet">${tiles}</div></body>
 </html>`
 }
 
@@ -228,8 +102,8 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
       .catch(() => {})
   }, [product.id])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedSize('')
   }, [selectedVariant?.id])
 
@@ -244,13 +118,13 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
   const activeBarcode = selectedVariant?.barcode ?? null
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!activeBarcode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBarcodeReady(false)
       return
     }
-    loadJsBarcode().then((JsBarcode) => {
-      if (!previewBarcodeSvgRef.current) return
+    if (!previewBarcodeSvgRef.current) return
+    try {
       JsBarcode(previewBarcodeSvgRef.current, activeBarcode, {
         format: 'EAN13',
         width: 1.6,
@@ -264,50 +138,50 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
         textMargin: 2,
       })
       setBarcodeReady(true)
-    })
+    } catch {
+      setBarcodeReady(false)
+    }
   }, [activeBarcode])
 
   function handleExport() {
     if (!activeBarcode) return
     setExporting(true)
 
-    loadJsBarcode().then((JsBarcode) => {
-      // Render barcode into a detached SVG for the print HTML
-      const printSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-      JsBarcode(printSvg, activeBarcode, {
-        format: 'EAN13',
-        width: 1.8,
-        height: 48,
-        displayValue: true,
-        fontSize: 11,
-        margin: 0,
-        background: '#ffffff',
-        lineColor: '#000000',
-        font: 'monospace',
-        textMargin: 2,
-      })
-      printSvg.setAttribute('style', 'width:100%;display:block;')
-      const barcodeSvgStr = new XMLSerializer().serializeToString(printSvg)
-
-      const html = buildPrintHtml(product, barcodeSvgStr)
-
-      const printWin = window.open('', '_blank', 'width=700,height=500')
-      if (!printWin) {
-        alert('Pop-up bloqueado. Permita pop-ups neste site para exportar.')
-        setExporting(false)
-        return
-      }
-
-      printWin.document.open()
-      printWin.document.write(html)
-      printWin.document.close()
-
-      setTimeout(() => {
-        printWin.focus()
-        printWin.print()
-        setExporting(false)
-      }, 600)
+    // Render barcode into a detached SVG for the print HTML
+    const printSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    JsBarcode(printSvg, activeBarcode, {
+      format: 'EAN13',
+      width: 1.8,
+      height: 48,
+      displayValue: true,
+      fontSize: 11,
+      margin: 0,
+      background: '#ffffff',
+      lineColor: '#000000',
+      font: 'monospace',
+      textMargin: 2,
     })
+    printSvg.setAttribute('style', 'width:100%;display:block;')
+    const barcodeSvgStr = new XMLSerializer().serializeToString(printSvg)
+
+    const html = buildPrintHtml(product, barcodeSvgStr)
+
+    const printWin = window.open('', '_blank', 'width=700,height=500')
+    if (!printWin) {
+      alert('Pop-up bloqueado. Permita pop-ups neste site para exportar.')
+      setExporting(false)
+      return
+    }
+
+    printWin.document.open()
+    printWin.document.write(html)
+    printWin.document.close()
+
+    setTimeout(() => {
+      printWin.focus()
+      printWin.print()
+      setExporting(false)
+    }, 600)
   }
 
   return (
@@ -412,231 +286,50 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
                       borderRadius: 18,
                       overflow: 'hidden',
                       position: 'relative',
-                      background: 'linear-gradient(158deg,#0d0d0d 0%,#1a1a1a 55%,#111 100%)',
+                      background: '#0a0a0a',
+                      display: 'flex',
+                      flexDirection: 'column',
                       flexShrink: 0,
                     }}
                   >
-                    {/* diagonal lines */}
-                    <svg
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 160 300"
-                      preserveAspectRatio="none"
-                      style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
-                    >
-                      {Array.from({ length: 8 }, (_, i) => (
-                        <line
-                          key={i}
-                          x1="-40"
-                          y1={30 + i * 38}
-                          x2="200"
-                          y2={30 + i * 38 - 80}
-                          stroke="#00b4d8"
-                          strokeWidth="1.2"
-                          strokeOpacity="0.18"
-                        />
-                      ))}
-                    </svg>
-                    {/* watermark */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: -6,
-                        fontSize: 120,
-                        fontWeight: 900,
-                        fontStyle: 'italic',
-                        color: '#fff',
-                        opacity: 0.04,
-                        lineHeight: 1,
-                        userSelect: 'none',
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      B
-                    </div>
                     {/* hole */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        paddingTop: 10,
-                        position: 'relative',
-                      }}
-                    >
+                    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12 }}>
                       <div
-                        style={{
-                          width: 14,
-                          height: 14,
-                          borderRadius: '50%',
-                          border: '2px solid #2a2a2a',
-                          background: '#0a0a0a',
-                          boxShadow: 'inset 0 1px 3px rgba(0,0,0,.8)',
-                        }}
+                        style={{ width: 14, height: 14, borderRadius: '50%', background: '#fff' }}
                       />
                     </div>
                     {/* logo */}
                     <div
                       style={{
+                        flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        marginTop: 10,
-                        position: 'relative',
+                        justifyContent: 'center',
+                        gap: 10,
                       }}
                     >
-                      <div
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: '50%',
-                          border: '1.5px solid #333',
-                          background: '#111',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 2px 12px rgba(0,0,0,.6)',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 26,
-                            fontWeight: 900,
-                            fontStyle: 'italic',
-                            color: '#fff',
-                          }}
-                        >
-                          B
-                        </span>
-                      </div>
-                      <p
-                        style={{
-                          marginTop: 8,
-                          fontSize: 13,
-                          fontWeight: 900,
-                          letterSpacing: '.38em',
-                          color: '#fff',
-                        }}
-                      >
-                        BROTHERS
+                      <img
+                        src="/logo.png"
+                        alt="Brothers"
+                        style={{ width: 64, height: 64, objectFit: 'contain' }}
+                      />
+                      <p style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>
+                        BROTHERS OUTLET
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                        <div style={{ height: 1, width: 18, background: '#00b4d8' }} />
-                        <p
-                          style={{
-                            fontSize: 7,
-                            fontWeight: 700,
-                            letterSpacing: '.55em',
-                            color: '#00b4d8',
-                          }}
-                        >
-                          OUTLET
-                        </p>
-                        <div style={{ height: 1, width: 18, background: '#00b4d8' }} />
-                      </div>
                     </div>
-                    {/* icons */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                        alignItems: 'center',
-                        borderTop: '1px solid #222',
-                        borderBottom: '1px solid #222',
-                        padding: '7px 8px',
-                        margin: '10px 0',
-                        position: 'relative',
-                      }}
-                    >
-                      {[
-                        { icon: '⚡', label: 'PERFORMANCE' },
-                        { icon: '✓', label: 'QUALIDADE' },
-                        { icon: '◈', label: 'ESTILO' },
-                      ].map((item, i) => (
-                        <div
-                          key={item.label}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 3,
-                            borderRight: i < 2 ? '1px solid #222' : 'none',
-                            paddingRight: i < 2 ? 8 : 0,
-                          }}
-                        >
-                          <span style={{ fontSize: 12, color: '#00b4d8' }}>{item.icon}</span>
-                          <span
-                            style={{
-                              fontSize: 5.5,
-                              fontWeight: 700,
-                              letterSpacing: '.12em',
-                              color: '#666',
-                            }}
-                          >
-                            {item.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {/* lifestyle */}
-                    <div
-                      style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}
-                    >
-                      <div
-                        style={{
-                          border: '1.5px solid #00b4d8',
-                          borderRadius: 3,
-                          padding: '4px 14px',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 8.5,
-                            fontWeight: 700,
-                            letterSpacing: '.55em',
-                            color: '#00b4d8',
-                          }}
-                        >
-                          LIFESTYLE
-                        </span>
-                      </div>
-                    </div>
-                    {/* slogan */}
                     <p
                       style={{
                         textAlign: 'center',
-                        fontSize: 7,
-                        fontWeight: 300,
-                        letterSpacing: '.22em',
-                        color: '#555',
-                        marginTop: 10,
-                        position: 'relative',
+                        fontSize: 6.5,
+                        fontWeight: 700,
+                        letterSpacing: '.12em',
+                        color: '#fff',
+                        paddingBottom: 14,
                       }}
                     >
-                      VISTA SUA MELHOR VERSÃO.
+                      WWW.BROTHERSOUTLET.COM.BR
                     </p>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: 4,
-                        marginTop: 5,
-                        position: 'relative',
-                      }}
-                    >
-                      {[0, 1, 2].map((i) => (
-                        <div
-                          key={i}
-                          style={{
-                            height: 2,
-                            width: 14,
-                            borderRadius: 2,
-                            background: '#00b4d8',
-                            opacity: 0.7,
-                          }}
-                        />
-                      ))}
-                    </div>
                   </div>
                 </div>
 
@@ -652,209 +345,75 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
                       borderRadius: 18,
                       overflow: 'hidden',
                       position: 'relative',
-                      background: 'linear-gradient(158deg,#0d0d0d 0%,#1a1a1a 55%,#111 100%)',
+                      background: '#0a0a0a',
                       display: 'flex',
                       flexDirection: 'column',
                     }}
                   >
                     {/* hole */}
-                    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12 }}>
                       <div
-                        style={{
-                          width: 14,
-                          height: 14,
-                          borderRadius: '50%',
-                          border: '2px solid #2a2a2a',
-                          background: '#0a0a0a',
-                        }}
+                        style={{ width: 14, height: 14, borderRadius: '50%', background: '#fff' }}
                       />
                     </div>
                     {/* header */}
-                    <div style={{ textAlign: 'center', padding: '8px 10px 0' }}>
-                      <p style={{ fontSize: 7, color: '#888', letterSpacing: '.18em' }}>
-                        OBRIGADO POR ESCOLHER
+                    <div style={{ textAlign: 'center', paddingTop: 14 }}>
+                      <p style={{ fontSize: 7.5, color: '#fff' }}>Obrigado por escolher</p>
+                      <p style={{ marginTop: 2, fontSize: 11, fontWeight: 800, color: '#fff' }}>
+                        BROTHERS OUTLET
                       </p>
-                      <p
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 900,
-                          color: '#fff',
-                          letterSpacing: '.1em',
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        BROTHERS OUTLET!
-                      </p>
-                      <div
-                        style={{
-                          height: 1.5,
-                          background: '#00b4d8',
-                          margin: '4px auto 0',
-                          width: '75%',
-                        }}
-                      />
                     </div>
-                    {/* benefits */}
+                    {/* qr + barcode */}
                     <div
                       style={{
-                        padding: '5px 10px 0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 3,
-                      }}
-                    >
-                      {[
-                        { icon: '✓', text: 'PRODUTO SELECIONADO COM QUALIDADE' },
-                        { icon: '◎', text: 'CONFORTO PARA O DIA A DIA' },
-                        { icon: '◈', text: 'ESTILO PARA QUALQUER OCASIÃO' },
-                      ].map((b) => (
-                        <div key={b.text} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 9, color: '#00b4d8', flexShrink: 0 }}>
-                            {b.icon}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 6,
-                              fontWeight: 600,
-                              color: '#ccc',
-                              letterSpacing: '.04em',
-                            }}
-                          >
-                            {b.text}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ height: 1, background: '#222', margin: '4px 10px' }} />
-                    {/* social */}
-                    <div style={{ padding: '0 10px' }}>
-                      <p
-                        style={{
-                          fontSize: 5.5,
-                          fontWeight: 700,
-                          letterSpacing: '.28em',
-                          color: '#00b4d8',
-                          marginBottom: 2,
-                        }}
-                      >
-                        SIGA-NOS NAS REDES SOCIAIS
-                      </p>
-                      <p style={{ fontSize: 6.5, color: '#ccc' }}>⊙ @Brothersoutlet_oficial</p>
-                      <p style={{ fontSize: 6.5, color: '#ccc', marginTop: 1 }}>
-                        ◉ BAÍA FORMOSA-RN
-                      </p>
-                    </div>
-                    {/* care */}
-                    <div style={{ padding: '0 8px' }}>
-                      <p
-                        style={{
-                          fontSize: 5.5,
-                          fontWeight: 700,
-                          letterSpacing: '.2em',
-                          color: '#555',
-                          marginBottom: 2,
-                        }}
-                      >
-                        CUIDADOS
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        {['LAVAR À MÃO', 'SEM ALVEJANTE', 'SECAR À SOMBRA', 'SEM FERRO'].map(
-                          (label) => (
-                            <div
-                              key={label}
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: 1,
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: 14,
-                                  height: 14,
-                                  border: '1px solid #444',
-                                  borderRadius: 2,
-                                }}
-                              />
-                              <span
-                                style={{
-                                  fontSize: 4.5,
-                                  color: '#555',
-                                  textAlign: 'center',
-                                  maxWidth: 20,
-                                  lineHeight: 1.2,
-                                }}
-                              >
-                                {label}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                    {/* barcode preview */}
-                    <div
-                      style={{
-                        padding: '2px 6px 0',
                         flex: 1,
                         display: 'flex',
-                        alignItems: 'flex-end',
-                      }}
-                    >
-                      <svg ref={previewBarcodeSvgRef} style={{ width: '100%' }} />
-                    </div>
-                    {/* footer */}
-                    <div
-                      style={{
-                        display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '5px 10px',
-                        borderTop: '1.5px solid #00b4d8',
-                        background: 'rgba(0,180,216,.12)',
+                        justifyContent: 'center',
+                        gap: 6,
                       }}
                     >
                       <div
                         style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: '50%',
-                          border: '1.5px solid rgba(255,255,255,.25)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 11,
-                          fontWeight: 900,
-                          fontStyle: 'italic',
-                          color: '#fff',
+                          background: '#fff',
+                          borderRadius: 6,
+                          padding: 6,
+                          lineHeight: 0,
                         }}
                       >
-                        B
+                        <img
+                          src="/qrcode.png"
+                          alt="QR Code"
+                          style={{ width: 64, height: 64, display: 'block' }}
+                        />
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <p
-                          style={{
-                            fontSize: 7,
-                            fontWeight: 900,
-                            color: '#fff',
-                            letterSpacing: '.18em',
-                          }}
-                        >
-                          BROTHERS
-                        </p>
-                        <p
-                          style={{
-                            fontSize: 5.5,
-                            fontWeight: 700,
-                            color: '#00b4d8',
-                            letterSpacing: '.35em',
-                          }}
-                        >
-                          OUTLET
-                        </p>
+                      <p style={{ fontSize: 7, color: '#fff' }}>@brothersoutlet_oficial</p>
+                      <div
+                        style={{
+                          background: '#fff',
+                          borderRadius: 6,
+                          padding: '4px 6px 2px',
+                          width: '78%',
+                          display: 'flex',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <svg ref={previewBarcodeSvgRef} style={{ width: '100%' }} />
                       </div>
                     </div>
+                    <p
+                      style={{
+                        textAlign: 'center',
+                        fontSize: 6.5,
+                        fontWeight: 700,
+                        letterSpacing: '.12em',
+                        color: '#fff',
+                        paddingBottom: 14,
+                      }}
+                    >
+                      WWW.BROTHERSOUTLET.COM.BR
+                    </p>
                   </div>
                 </div>
               </div>

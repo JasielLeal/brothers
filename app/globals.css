@@ -85,6 +85,12 @@
   * {
     border-color: hsl(var(--border));
   }
+  html {
+    /* Reserve the scrollbar's width permanently so that Radix components
+       (Select, Dialog, Popover) locking body scroll while open don't leave
+       an extra gap that shifts fixed/sticky layout (e.g. the admin sidebar). */
+    scrollbar-gutter: stable;
+  }
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));

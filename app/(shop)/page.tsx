@@ -10,6 +10,7 @@ import { useBestSellers, useNewArrivals } from '@/features/products/hooks/usePro
 import { ProductCard } from '@/features/products/components/ProductCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FadeIn } from '@/components/ui/FadeIn'
+import { useIsTablet } from '@/hooks/useIsTablet'
 
 /* ─── static data ──────────────────────────────────────── */
 
@@ -120,18 +121,28 @@ export default function HomePage() {
   const [activeDeal, setActiveDeal] = useState('Todos')
   const [currentDeal, setCurrentDeal] = useState(0)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const isTablet = useIsTablet()
   const { data: featuredProducts, isLoading } = useBestSellers(12)
   const [currentBestSeller, setCurrentBestSeller] = useState(0)
   const bsSwipeStart = useRef<number | null>(null)
   const [bsPage, setBsPage] = useState(0)
-  const BS_PER_PAGE = 4
+  const BS_PER_PAGE = isTablet ? 2 : 4
   const bsTotalPages = Math.ceil((featuredProducts?.length ?? 0) / BS_PER_PAGE)
 
   const { data: newArrivals, isLoading: newArrivalsLoading } = useNewArrivals(12)
   const [naSlide, setNaSlide] = useState(0)
   const naSwipeStart = useRef<number | null>(null)
-  const NA_PER_PAGE = 4
+  const NA_PER_PAGE = isTablet ? 2 : 4
   const naTotalPages = Math.ceil((newArrivals?.length ?? 0) / NA_PER_PAGE)
+
+  // Reset to the first page when the per-page count changes (e.g. rotating
+  // a tablet), otherwise bsPage/naSlide can point past the new total.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setBsPage(0)
+    setNaSlide(0)
+  }, [isTablet])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function onNaSwipeStart(x: number) {
     naSwipeStart.current = x
@@ -321,7 +332,7 @@ export default function HomePage() {
               <div className="sm:hidden">
                 <Skeleton className="aspect-[3/4] w-full rounded-2xl bg-white/5" />
               </div>
-              <div className="hidden grid-cols-4 gap-6 sm:grid">
+              <div className="hidden grid-cols-2 gap-6 sm:grid lg:grid-cols-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="aspect-[3/4] w-full rounded-2xl bg-white/5" />
                 ))}
@@ -376,7 +387,10 @@ export default function HomePage() {
                         {featuredProducts
                           ?.slice(pageIdx * BS_PER_PAGE, (pageIdx + 1) * BS_PER_PAGE)
                           .map((product) => (
-                            <div key={product.id} className="w-1/4 shrink-0">
+                            <div
+                              key={product.id}
+                              className={isTablet ? 'w-1/2 shrink-0' : 'w-1/4 shrink-0'}
+                            >
                               <ProductCard product={product} />
                             </div>
                           ))}
@@ -593,7 +607,7 @@ export default function HomePage() {
               <div className="sm:hidden">
                 <Skeleton className="aspect-[3/4] w-full rounded-2xl bg-white/5" />
               </div>
-              <div className="hidden grid-cols-4 gap-6 sm:grid">
+              <div className="hidden grid-cols-2 gap-6 sm:grid lg:grid-cols-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="aspect-[3/4] w-full rounded-2xl bg-white/5" />
                 ))}
@@ -649,7 +663,10 @@ export default function HomePage() {
                         {newArrivals
                           ?.slice(pageIdx * NA_PER_PAGE, (pageIdx + 1) * NA_PER_PAGE)
                           .map((product) => (
-                            <div key={product.id} className="w-1/4 shrink-0">
+                            <div
+                              key={product.id}
+                              className={isTablet ? 'w-1/2 shrink-0' : 'w-1/4 shrink-0'}
+                            >
                               <ProductCard product={product} />
                             </div>
                           ))}

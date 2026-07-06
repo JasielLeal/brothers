@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/ui/WhatsAppButton'
+import { CookieConsent } from '@/components/ui/CookieConsent'
 import type { ReactNode } from 'react'
 
 export default function ShopLayout({ children }: { children: ReactNode }) {
@@ -10,6 +11,7 @@ export default function ShopLayout({ children }: { children: ReactNode }) {
       <main className="flex w-full flex-1 flex-col pt-17">{children}</main>
       <Footer />
       <WhatsAppButton />
+      <CookieConsent />
     </div>
   )
 }
