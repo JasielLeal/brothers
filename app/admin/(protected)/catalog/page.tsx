@@ -17,6 +17,7 @@ import {
   useUpdateProductType,
   useDeleteProductType,
 } from '@/features/products/hooks/useProducts'
+import { SIZE_SET_LABELS, type SizeSetType } from '@/features/products/types/product.types'
 
 /* ── helpers ────────────────────────────────────────────── */
 function toSlug(name: string) {
@@ -33,6 +34,8 @@ interface SimpleEntity {
   name: string
   slug: string
   createdAt: string
+  hasVariants?: boolean
+  sizeSet?: SizeSetType
 }
 
 /* ── EntityModal ────────────────────────────────────────── */
@@ -40,18 +43,27 @@ function EntityModal({
   entity,
   label,
   isPending,
+  showHasVariants,
   onClose,
   onSubmit,
 }: {
   entity: SimpleEntity | null
   label: string
   isPending: boolean
+  showHasVariants?: boolean
   onClose: () => void
-  onSubmit: (data: { name: string; slug: string }) => void
+  onSubmit: (data: {
+    name: string
+    slug: string
+    hasVariants?: boolean
+    sizeSet?: SizeSetType
+  }) => void
 }) {
   const [name, setName] = useState(entity?.name ?? '')
   const [slug, setSlug] = useState(entity?.slug ?? '')
   const [slugTouched, setSlugTouched] = useState(!!entity)
+  const [hasVariants, setHasVariants] = useState(entity?.hasVariants ?? true)
+  const [sizeSet, setSizeSet] = useState<SizeSetType>(entity?.sizeSet ?? 'CLOTHING')
   const [error, setError] = useState('')
 
   function handleNameChange(val: string) {
@@ -75,7 +87,11 @@ function EntityModal({
       return
     }
     setError('')
-    onSubmit({ name: name.trim(), slug: slug.trim() })
+    onSubmit({
+      name: name.trim(),
+      slug: slug.trim(),
+      ...(showHasVariants ? { hasVariants, sizeSet: hasVariants ? sizeSet : undefined } : {}),
+    })
   }
 
   return (
@@ -115,6 +131,41 @@ function EntityModal({
             />
             <p className="text-[11px] text-gray-400">Gerado automaticamente a partir do nome</p>
           </div>
+
+          {showHasVariants && (
+            <>
+              <label className="flex items-start gap-2 rounded-lg border border-gray-200 p-3">
+                <input
+                  type="checkbox"
+                  checked={hasVariants}
+                  onChange={(e) => setHasVariants(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#4A6CF7] focus:ring-[#4A6CF7]/20"
+                />
+                <span className="text-sm text-gray-700">
+                  Produtos desta categoria têm variação de cor/tamanho
+                  <span className="mt-0.5 block text-[11px] text-gray-400">
+                    Desmarque para categorias sem nenhuma variação, onde o produto tem apenas
+                    quantidade em estoque.
+                  </span>
+                </span>
+              </label>
+
+              {hasVariants && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Tipo de tamanho</label>
+                  <select
+                    value={sizeSet}
+                    onChange={(e) => setSizeSet(e.target.value as SizeSetType)}
+                    className="flex h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm transition outline-none focus:border-[#4A6CF7] focus:ring-2 focus:ring-[#4A6CF7]/20"
+                  >
+                    <option value="CLOTHING">Roupa (PP, P, M, G, GG, XGG)</option>
+                    <option value="SHOE">Calçado (33 a 44)</option>
+                    <option value="UNIQUE">Só cor (sem tamanho, ex: boné)</option>
+                  </select>
+                </div>
+              )}
+            </>
+          )}
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -196,6 +247,7 @@ function EntityTable({
   EmptyIcon,
   items,
   isLoading,
+  showHasVariants,
   onCreate,
   onUpdate,
   onDelete,
@@ -208,8 +260,17 @@ function EntityTable({
   EmptyIcon: React.ElementType
   items: SimpleEntity[]
   isLoading: boolean
-  onCreate: (data: { name: string; slug: string }) => void
-  onUpdate: (id: string, data: { name: string; slug: string }) => void
+  showHasVariants?: boolean
+  onCreate: (data: {
+    name: string
+    slug: string
+    hasVariants?: boolean
+    sizeSet?: SizeSetType
+  }) => void
+  onUpdate: (
+    id: string,
+    data: { name: string; slug: string; hasVariants?: boolean; sizeSet?: SizeSetType }
+  ) => void
   onDelete: (id: string) => void
   isCreating: boolean
   isUpdating: boolean
@@ -285,6 +346,11 @@ function EntityTable({
                 <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase">
                   Slug
                 </th>
+                {showHasVariants && (
+                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                    Variação
+                  </th>
+                )}
                 <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase">
                   Criado em
                 </th>
@@ -300,6 +366,21 @@ function EntityTable({
                       {item.slug}
                     </span>
                   </td>
+                  {showHasVariants && (
+                    <td className="px-5 py-3.5">
+                      <span
+                        className={`rounded-md px-2 py-0.5 text-xs font-medium ${
+                          item.hasVariants
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'bg-amber-50 text-amber-600'
+                        }`}
+                      >
+                        {item.hasVariants
+                          ? SIZE_SET_LABELS[item.sizeSet ?? 'CLOTHING']
+                          : 'Só quantidade'}
+                      </span>
+                    </td>
+                  )}
                   <td className="px-5 py-3.5 text-gray-400">
                     {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                   </td>
@@ -340,6 +421,7 @@ function EntityTable({
           entity={editing}
           label={label}
           isPending={isCreating || isUpdating}
+          showHasVariants={showHasVariants}
           onClose={() => {
             setModalOpen(false)
             setEditing(null)
@@ -431,6 +513,7 @@ export default function CatalogPage() {
           EmptyIcon={Tag}
           items={categories}
           isLoading={loadingCat}
+          showHasVariants
           onCreate={(data) => createCat(data)}
           onUpdate={(id, data) => updateCat({ id, data })}
           onDelete={(id) => deleteCat(id)}

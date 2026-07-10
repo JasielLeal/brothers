@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import { X, Download, Loader2 } from 'lucide-react'
 import JsBarcode from 'jsbarcode'
 import type { Product, ProductVariant, SizeLabel } from '@/features/products/types/product.types'
-import { SIZES } from '@/features/products/types/product.types'
+import { SIZE_SETS } from '@/features/products/types/product.types'
 
 const TAG_BG = '#0a0a0a'
 
@@ -102,13 +102,17 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
       .catch(() => {})
   }, [product.id])
 
+  const isUniqueSize = product.category.sizeSet === 'UNIQUE'
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedSize('')
-  }, [selectedVariant?.id])
+    setSelectedSize(isUniqueSize ? SIZE_SETS.UNIQUE[0] : '')
+  }, [selectedVariant?.id, isUniqueSize])
 
   const availableSizes = selectedVariant
-    ? SIZES.filter((s) => (selectedVariant.sizes.find((sz) => sz.size === s)?.stock ?? 0) > 0)
+    ? SIZE_SETS[product.category.sizeSet].filter(
+        (s) => (selectedVariant.sizes.find((sz) => sz.size === s)?.stock ?? 0) > 0
+      )
     : []
 
   function stockFor(size: SizeLabel) {
@@ -235,7 +239,7 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
             </div>
 
             {/* Tamanhos */}
-            {selectedVariant && (
+            {selectedVariant && !isUniqueSize && (
               <div className="space-y-1.5">
                 <p className="text-xs text-gray-400">Tamanho</p>
                 {availableSizes.length > 0 ? (

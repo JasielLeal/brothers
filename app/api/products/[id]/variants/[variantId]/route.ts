@@ -4,8 +4,6 @@ import { prisma } from '@/lib/db'
 import { ok, badRequest, notFound, internalError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth-guard'
 
-const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XGG']
-
 const updateSchema = z.object({
   colorName: z.string().min(1).optional(),
   colorHex: z.string().nullable().optional(),
@@ -13,7 +11,7 @@ const updateSchema = z.object({
   sizes: z
     .array(
       z.object({
-        size: z.enum(['PP', 'P', 'M', 'G', 'GG', 'XGG']),
+        size: z.string().min(1),
         stock: z.number().int().min(0),
       })
     )
@@ -44,10 +42,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         ...(sizes !== undefined && {
           sizes: {
             deleteMany: {},
-            create: SIZES.map((s) => {
-              const found = sizes.find((sz) => sz.size === s)
-              return { size: s, stock: found?.stock ?? 0 }
-            }).filter((s) => s.stock > 0),
+            create: sizes.filter((s) => s.stock > 0).map((s) => ({ size: s.size, stock: s.stock })),
           },
         }),
       },

@@ -8,7 +8,7 @@ import { formatCurrency } from '@/utils/formatCurrency'
 import { useCart } from '@/features/cart/hooks/useCart'
 import { useWishlist } from '@/features/wishlist/hooks/useWishlist'
 import type { Product, ProductVariant, SizeLabel } from '@/features/products/types/product.types'
-import { SIZES } from '@/features/products/types/product.types'
+import { SIZE_SETS } from '@/features/products/types/product.types'
 interface ShippingOption {
   id: number
   name: string
@@ -65,16 +65,19 @@ function formatCep(value: string) {
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
+  const hasVariants = product.category.hasVariants
+  const isUniqueSize = product.category.sizeSet === 'UNIQUE'
   const [variants, setVariants] = useState<ProductVariant[]>([])
-  const [variantsLoading, setVariantsLoading] = useState(true)
+  const [variantsLoading, setVariantsLoading] = useState(hasVariants)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [prevVariantId, setPrevVariantId] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState<SizeLabel | ''>('')
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [quantity, setQuantity] = useState(1)
 
   if ((selectedVariant?.id ?? null) !== prevVariantId) {
     setPrevVariantId(selectedVariant?.id ?? null)
-    setSelectedSize('')
+    setSelectedSize(isUniqueSize ? SIZE_SETS.UNIQUE[0] : '')
     setSelectedImageIndex(0)
   }
 
@@ -131,6 +134,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const router = useRouter()
 
   useEffect(() => {
+    if (!hasVariants) return
     fetch(`/api/products/${product.id}/variants`)
       .then((r) => r.json())
       .then((d) => {
@@ -140,7 +144,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       })
       .catch(() => {})
       .finally(() => setVariantsLoading(false))
-  }, [product.id])
+  }, [product.id, hasVariants])
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -149,7 +153,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const displayImages = selectedVariant?.images.length ? selectedVariant.images : product.images
 
   const availableSizes = selectedVariant
-    ? SIZES.filter((s) => {
+    ? SIZE_SETS[product.category.sizeSet].filter((s) => {
         const sizeStock = selectedVariant.sizes.find((sz) => sz.size === s)
         return sizeStock && sizeStock.stock > 0
       })
@@ -160,10 +164,17 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       ? (selectedVariant.sizes.find((sz) => sz.size === selectedSize)?.stock ?? 0)
       : 0
 
-  const canAdd = !!selectedVariant && !!selectedSize && stockForSelectedSize > 0
+  const canAdd = hasVariants
+    ? !!selectedVariant && !!selectedSize && stockForSelectedSize > 0
+    : product.stock > 0
 
   function handleAddToCart() {
-    if (!canAdd || !selectedVariant) return
+    if (!canAdd) return
+    if (!hasVariants) {
+      addItem(product, quantity, { image: displayImages[0] })
+      return
+    }
+    if (!selectedVariant) return
     addItem(product, 1, {
       color: selectedVariant.colorName,
       colorHex: selectedVariant.colorHex ?? undefined,
@@ -254,7 +265,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         </div>
 
         {/* Cores */}
-        {variantsLoading ? (
+        {!hasVariants ? null : variantsLoading ? (
           <div className="mb-5 space-y-2.5">
             <div className="h-4 w-24 animate-pulse rounded-full bg-white/10" />
             <div className="flex gap-2.5">
@@ -289,7 +300,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         ) : null}
 
         {/* Tamanhos */}
-        {variantsLoading ? (
+        {!hasVariants || isUniqueSize ? null : variantsLoading ? (
           <div className="mb-6 space-y-2.5">
             <div className="h-4 w-28 animate-pulse rounded-full bg-white/10" />
             <div className="flex gap-2">
@@ -327,6 +338,35 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             )}
           </div>
         ) : null}
+
+        {/* Quantidade (produtos sem variação de cor/tamanho) */}
+        {!hasVariants && (
+          <div className="mb-6">
+            <p className="mb-2.5 text-sm font-semibold text-white">Quantidade</p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center rounded-full border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="flex h-10 w-10 items-center justify-center text-lg text-white/70 hover:text-white"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center text-sm font-semibold text-white">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                  className="flex h-10 w-10 items-center justify-center text-lg text-white/70 hover:text-white"
+                >
+                  +
+                </button>
+              </div>
+              <span className="text-xs text-white/40">
+                {product.stock > 0 ? `${product.stock} disponíveis` : 'Sem estoque'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Sidebar de Compra ─────────────────────────── */}
@@ -395,9 +435,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             {!canAdd
               ? variantsLoading
                 ? 'Carregando...'
-                : !selectedVariant
-                  ? 'Selecione uma cor'
-                  : 'Selecione um tamanho'
+                : !hasVariants
+                  ? 'Sem estoque'
+                  : !selectedVariant
+                    ? 'Selecione uma cor'
+                    : isUniqueSize
+                      ? 'Sem estoque'
+                      : 'Selecione um tamanho'
               : 'Comprar agora'}
           </button>
           <button

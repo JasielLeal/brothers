@@ -6,72 +6,22 @@ import Link from 'next/link'
 import Marquee from 'react-fast-marquee'
 import { motion } from 'framer-motion'
 import { ChevronRight, ChevronDown, Zap, ShieldCheck, BadgeCheck } from 'lucide-react'
-import { useBestSellers, useNewArrivals } from '@/features/products/hooks/useProducts'
+import {
+  useBestSellers,
+  useNewArrivals,
+  usePopularCategories,
+  useDeals,
+} from '@/features/products/hooks/useProducts'
+import { formatCurrency } from '@/utils/formatCurrency'
 import { ProductCard } from '@/features/products/components/ProductCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FadeIn } from '@/components/ui/FadeIn'
 import { useIsTablet } from '@/hooks/useIsTablet'
+import { useIsNotebook } from '@/hooks/useIsNotebook'
 
 /* ─── static data ──────────────────────────────────────── */
 
 const dealFilters = ['Todos', 'Feminino', 'Masculino', 'Casual', 'Esportivo', 'outros']
-
-const deals = [
-  {
-    id: 1,
-    label: 'Look do Dia',
-    name: 'Coleção Primavera',
-    discount: 40,
-    image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&q=80',
-  },
-  {
-    id: 2,
-    label: 'Street Style',
-    name: 'Moda Urbana',
-    discount: 20,
-    image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=80',
-  },
-  {
-    id: 3,
-    label: 'Casual Chic',
-    name: 'Look Minimalista',
-    discount: 17,
-    image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&q=80',
-  },
-]
-
-const categories = [
-  {
-    name: 'Camisetas',
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&q=80',
-    count: '2.3k+',
-  },
-  {
-    name: 'Calças',
-    image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=300&q=80',
-    count: '1.8k+',
-  },
-  {
-    name: 'Vestidos',
-    image: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=300&q=80',
-    count: '3.1k+',
-  },
-  {
-    name: 'Calçados',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&q=80',
-    count: '1.5k+',
-  },
-  {
-    name: 'Jaquetas',
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&q=80',
-    count: '900+',
-  },
-  {
-    name: 'Acessórios',
-    image: 'https://images.unsplash.com/photo-1492707892479-7bc8d5a4ee93?w=300&q=80',
-    count: '2k+',
-  },
-]
 
 const brands = [
   'Adidas',
@@ -122,17 +72,22 @@ export default function HomePage() {
   const [currentDeal, setCurrentDeal] = useState(0)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const isTablet = useIsTablet()
+  const isNotebook = useIsNotebook()
   const { data: featuredProducts, isLoading } = useBestSellers(12)
   const [currentBestSeller, setCurrentBestSeller] = useState(0)
   const bsSwipeStart = useRef<number | null>(null)
   const [bsPage, setBsPage] = useState(0)
-  const BS_PER_PAGE = isTablet ? 2 : 4
+  const BS_PER_PAGE = isTablet ? 2 : isNotebook ? 3 : 4
   const bsTotalPages = Math.ceil((featuredProducts?.length ?? 0) / BS_PER_PAGE)
+
+  const { data: popularCategories, isLoading: popularCategoriesLoading } = usePopularCategories(6)
+
+  const { data: deals, isLoading: dealsLoading } = useDeals(6)
 
   const { data: newArrivals, isLoading: newArrivalsLoading } = useNewArrivals(12)
   const [naSlide, setNaSlide] = useState(0)
   const naSwipeStart = useRef<number | null>(null)
-  const NA_PER_PAGE = isTablet ? 2 : 4
+  const NA_PER_PAGE = isTablet ? 2 : isNotebook ? 3 : 4
   const naTotalPages = Math.ceil((newArrivals?.length ?? 0) / NA_PER_PAGE)
 
   // Reset to the first page when the per-page count changes (e.g. rotating
@@ -141,7 +96,7 @@ export default function HomePage() {
   useEffect(() => {
     setBsPage(0)
     setNaSlide(0)
-  }, [isTablet])
+  }, [isTablet, isNotebook])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   function onNaSwipeStart(x: number) {
@@ -168,11 +123,13 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    const total = deals?.length ?? 0
+    if (total === 0) return
     const timer = setInterval(() => {
-      setCurrentDeal((prev) => (prev + 1) % deals.length)
+      setCurrentDeal((prev) => (prev + 1) % total)
     }, 3500)
     return () => clearInterval(timer)
-  }, [])
+  }, [deals])
 
   return (
     <div className="w-full">
@@ -389,7 +346,13 @@ export default function HomePage() {
                           .map((product) => (
                             <div
                               key={product.id}
-                              className={isTablet ? 'w-1/2 shrink-0' : 'w-1/4 shrink-0'}
+                              className={
+                                isTablet
+                                  ? 'w-1/2 shrink-0'
+                                  : isNotebook
+                                    ? 'w-1/3 shrink-0'
+                                    : 'w-1/4 shrink-0'
+                              }
                             >
                               <ProductCard product={product} />
                             </div>
@@ -456,81 +419,127 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── Mobile: carousel ── */}
-          <div className="relative overflow-hidden rounded-2xl sm:hidden">
-            <div
-              className="flex transition-transform duration-500 ease-in-out"
-              style={{ transform: `translateX(-${currentDeal * 100}%)` }}
-            >
-              {deals.map((deal) => (
-                <Link key={deal.id} href="/" className="relative w-full shrink-0">
-                  <div className="relative aspect-[4/3]">
-                    <Image src={deal.image} alt={deal.name} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                  </div>
-                  <span className="absolute top-3 left-3 rounded-md bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
-                    -{deal.discount}%
-                  </span>
-                  <div className="absolute right-3 bottom-3 left-3">
-                    <p className="text-xs font-medium text-white/70">{deal.label}</p>
-                    <p className="text-sm font-bold text-white">{deal.name}</p>
-                  </div>
-                </Link>
+          {dealsLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl bg-white/5" />
               ))}
             </div>
-            {/* Dots */}
-            <div className="absolute right-3 bottom-3 flex items-center gap-1.5">
-              {deals.map((_, i) => (
+          ) : (
+            <>
+              {/* ── Mobile: carousel ── */}
+              <div className="relative overflow-hidden rounded-2xl sm:hidden">
+                <div
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${currentDeal * 100}%)` }}
+                >
+                  {(deals ?? []).map((deal) => {
+                    const discountPct = Math.round(
+                      ((deal.originalPrice - deal.price) / deal.originalPrice) * 100
+                    )
+                    const stockLabel =
+                      deal.stock <= 3
+                        ? `Últimas ${deal.stock} unidades!`
+                        : `Restam ${deal.stock} unidades`
+                    return (
+                      <Link
+                        key={deal.id}
+                        href={`/product/${deal.id}`}
+                        className="relative w-full shrink-0"
+                      >
+                        <div className="relative aspect-[4/3]">
+                          <Image
+                            src={deal.images[0]}
+                            alt={deal.name}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                        </div>
+                        <span className="absolute top-3 left-3 rounded-md bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                          -{discountPct}%
+                        </span>
+                        <div className="absolute right-3 bottom-3 left-3">
+                          <p className="text-xs font-medium text-amber-400">{stockLabel}</p>
+                          <p className="text-sm font-bold text-white">{deal.name}</p>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+                {/* Dots */}
+                <div className="absolute right-3 bottom-3 flex items-center gap-1.5">
+                  {(deals ?? []).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentDeal(i)}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === currentDeal ? 'h-2 w-6 bg-white' : 'h-2 w-2 bg-white/50'
+                      }`}
+                      aria-label={`Slide ${i + 1}`}
+                    />
+                  ))}
+                </div>
+                {/* Arrows */}
                 <button
-                  key={i}
-                  onClick={() => setCurrentDeal(i)}
-                  className={`rounded-full transition-all duration-300 ${
-                    i === currentDeal ? 'h-2 w-6 bg-white' : 'h-2 w-2 bg-white/50'
-                  }`}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
-            </div>
-            {/* Arrows */}
-            <button
-              onClick={() => setCurrentDeal((prev) => (prev - 1 + deals.length) % deals.length)}
-              className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white backdrop-blur-sm transition hover:bg-black/50"
-              aria-label="Anterior"
-            >
-              <ChevronRight className="h-4 w-4 rotate-180" />
-            </button>
-            <button
-              onClick={() => setCurrentDeal((prev) => (prev + 1) % deals.length)}
-              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white backdrop-blur-sm transition hover:bg-black/50"
-              aria-label="Próximo"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+                  onClick={() =>
+                    setCurrentDeal(
+                      (prev) => (prev - 1 + (deals?.length ?? 1)) % (deals?.length ?? 1)
+                    )
+                  }
+                  className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white backdrop-blur-sm transition hover:bg-black/50"
+                  aria-label="Anterior"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-180" />
+                </button>
+                <button
+                  onClick={() => setCurrentDeal((prev) => (prev + 1) % (deals?.length ?? 1))}
+                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white backdrop-blur-sm transition hover:bg-black/50"
+                  aria-label="Próximo"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
 
-          {/* ── Desktop: grid ── */}
-          <div className="hidden grid-cols-3 gap-4 sm:grid">
-            {deals.map((deal) => (
-              <Link key={deal.id} href="/" className="group relative overflow-hidden rounded-2xl">
-                <div className="relative aspect-[4/3]">
-                  <Image
-                    src={deal.image}
-                    alt={deal.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                </div>
-                <span className="absolute top-3 left-3 rounded-md bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
-                  -{deal.discount}%
-                </span>
-                <div className="absolute right-3 bottom-3 left-3">
-                  <p className="text-xs font-medium text-white/70">{deal.label}</p>
-                  <p className="text-sm font-bold text-white">{deal.name}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+              {/* ── Desktop: grid ── */}
+              <div className="hidden grid-cols-3 gap-4 sm:grid">
+                {(deals ?? []).map((deal) => {
+                  const discountPct = Math.round(
+                    ((deal.originalPrice - deal.price) / deal.originalPrice) * 100
+                  )
+                  const stockLabel =
+                    deal.stock <= 3
+                      ? `Últimas ${deal.stock} unidades!`
+                      : `Restam ${deal.stock} unidades`
+                  return (
+                    <Link
+                      key={deal.id}
+                      href={`/product/${deal.id}`}
+                      className="group relative overflow-hidden rounded-2xl"
+                    >
+                      <div className="relative aspect-[4/3]">
+                        <Image
+                          src={deal.images[0]}
+                          alt={deal.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                      </div>
+                      <span className="absolute top-3 left-3 rounded-md bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                        -{discountPct}%
+                      </span>
+                      <div className="absolute right-3 bottom-3 left-3">
+                        <p className="text-xs font-medium text-amber-400">{stockLabel}</p>
+                        <p className="text-sm font-bold text-white">{deal.name}</p>
+                        <p className="text-xs text-white/50">{formatCurrency(deal.price)}</p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -563,28 +572,37 @@ export default function HomePage() {
             </Link>
           </FadeIn>
           <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
-            {categories.map((cat) => (
-              <Link
-                key={cat.name}
-                href={`/search?q=${encodeURIComponent(cat.name)}`}
-                className="group flex flex-col gap-2"
-              >
-                <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] transition-all duration-300 group-hover:border-white/20">
-                  <Image
-                    src={cat.image}
-                    alt={cat.name}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white/80 group-hover:text-white">
-                    {cat.name}
-                  </p>
-                  <p className="text-xs text-white/30">{cat.count} peças</p>
-                </div>
-              </Link>
-            ))}
+            {popularCategoriesLoading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex flex-col gap-2">
+                    <Skeleton className="aspect-square w-full rounded-2xl bg-white/5" />
+                    <Skeleton className="h-3 w-3/4 bg-white/5" />
+                  </div>
+                ))
+              : popularCategories?.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/search?categoryId=${cat.id}`}
+                    className="group flex flex-col gap-2"
+                  >
+                    <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] transition-all duration-300 group-hover:border-white/20">
+                      {cat.image && (
+                        <Image
+                          src={cat.image}
+                          alt={cat.name}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white/80 group-hover:text-white">
+                        {cat.name}
+                      </p>
+                      <p className="text-xs text-white/30">{cat.count} peças</p>
+                    </div>
+                  </Link>
+                ))}
           </div>
         </div>
       </section>
@@ -665,7 +683,13 @@ export default function HomePage() {
                           .map((product) => (
                             <div
                               key={product.id}
-                              className={isTablet ? 'w-1/2 shrink-0' : 'w-1/4 shrink-0'}
+                              className={
+                                isTablet
+                                  ? 'w-1/2 shrink-0'
+                                  : isNotebook
+                                    ? 'w-1/3 shrink-0'
+                                    : 'w-1/4 shrink-0'
+                              }
                             >
                               <ProductCard product={product} />
                             </div>
@@ -714,12 +738,12 @@ export default function HomePage() {
 
       {/* ═══ CTA BANNER ══════════════════════════════════════ */}
       <section className="mx-auto max-w-screen-2xl px-6 py-12 lg:px-10">
-        <div className="group relative overflow-hidden rounded-3xl bg-gray-900">
+        <div className="group relative overflow-hidden rounded-3xl">
           <Image
-            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1400&q=80"
+            src="/banner-cta.png"
             alt="Compre na Forget"
             fill
-            className="object-cover opacity-40 transition-opacity duration-500 group-hover:opacity-30"
+            className="object-cover opacity-70 transition-opacity"
           />
           <div className="relative z-10 flex flex-col items-center justify-center px-8 py-20 text-center">
             <p className="mb-3 text-xs font-bold tracking-widest text-white uppercase">

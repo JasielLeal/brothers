@@ -7,6 +7,9 @@ import type {
   Brand,
   ProductType,
   NavCategory,
+  PopularCategory,
+  DealProduct,
+  SizeSetType,
 } from '@/features/products/types/product.types'
 import type { PaginatedResponse } from '@/types/global.types'
 
@@ -72,12 +75,32 @@ export const productsService = {
     return data
   },
 
-  async createCategory(input: { name: string; slug: string }): Promise<Category> {
+  async getPopularCategories(limit = 6): Promise<PopularCategory[]> {
+    const { data } = await api.get<PopularCategory[]>('/catalog/popular-categories', {
+      params: { limit },
+    })
+    return data
+  },
+
+  async getDeals(limit = 6): Promise<DealProduct[]> {
+    const { data } = await api.get<DealProduct[]>('/products/deals', { params: { limit } })
+    return data
+  },
+
+  async createCategory(input: {
+    name: string
+    slug: string
+    hasVariants?: boolean
+    sizeSet?: SizeSetType
+  }): Promise<Category> {
     const { data } = await api.post<Category>('/categories', input)
     return data
   },
 
-  async updateCategory(id: string, input: { name?: string; slug?: string }): Promise<Category> {
+  async updateCategory(
+    id: string,
+    input: { name?: string; slug?: string; hasVariants?: boolean; sizeSet?: SizeSetType }
+  ): Promise<Category> {
     const { data } = await api.put<Category>(`/categories/${id}`, input)
     return data
   },

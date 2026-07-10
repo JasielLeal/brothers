@@ -11,6 +11,8 @@ const updateSchema = z.object({
     .min(2)
     .regex(/^[a-z0-9-]+$/)
     .optional(),
+  hasVariants: z.boolean().optional(),
+  sizeSet: z.enum(['CLOTHING', 'SHOE', 'UNIQUE']).optional(),
 })
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

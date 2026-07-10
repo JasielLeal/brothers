@@ -5,10 +5,8 @@ import { nextBarcode } from '@/lib/barcode'
 import { ok, created, badRequest, internalError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth-guard'
 
-const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XGG']
-
 const sizeStockSchema = z.object({
-  size: z.enum(['PP', 'P', 'M', 'G', 'GG', 'XGG']),
+  size: z.string().min(1),
   stock: z.number().int().min(0),
 })
 
@@ -55,10 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         images,
         barcode,
         sizes: {
-          create: SIZES.map((s) => {
-            const found = sizes.find((sz) => sz.size === s)
-            return { size: s, stock: found?.stock ?? 0 }
-          }).filter((s) => s.stock > 0),
+          create: sizes.filter((s) => s.stock > 0).map((s) => ({ size: s.size, stock: s.stock })),
         },
       },
       include: { sizes: true },

@@ -1,5 +1,37 @@
-export const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
-export type SizeLabel = (typeof SIZES)[number]
+export const CLOTHING_SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
+export const SHOE_SIZES = [
+  '33',
+  '34',
+  '35',
+  '36',
+  '37',
+  '38',
+  '39',
+  '40',
+  '41',
+  '42',
+  '43',
+  '44',
+] as const
+export const UNIQUE_SIZES = ['Único'] as const
+
+export type SizeSetType = 'CLOTHING' | 'SHOE' | 'UNIQUE'
+
+export const SIZE_SETS: Record<SizeSetType, readonly string[]> = {
+  CLOTHING: CLOTHING_SIZES,
+  SHOE: SHOE_SIZES,
+  UNIQUE: UNIQUE_SIZES,
+}
+
+export const SIZE_SET_LABELS: Record<SizeSetType, string> = {
+  CLOTHING: 'Roupa',
+  SHOE: 'Calçado',
+  UNIQUE: 'Só cor',
+}
+
+/** @deprecated use SIZE_SETS.CLOTHING */
+export const SIZES = CLOTHING_SIZES
+export type SizeLabel = string
 
 export interface VariantSizeStock {
   id: string
@@ -23,6 +55,8 @@ export interface Category {
   id: string
   name: string
   slug: string
+  hasVariants: boolean
+  sizeSet: SizeSetType
   createdAt: string
   updatedAt: string
 }
@@ -81,6 +115,24 @@ export interface NavCategory {
   slug: string
   brands: { id: string; name: string; slug: string }[]
   types: { id: string; name: string; slug: string }[]
+}
+
+export interface PopularCategory {
+  id: string
+  name: string
+  slug: string
+  count: number
+  image: string | null
+}
+
+export interface DealProduct {
+  id: string
+  name: string
+  slug: string
+  price: number
+  originalPrice: number
+  stock: number
+  images: string[]
 }
 
 export interface ProductFilters {

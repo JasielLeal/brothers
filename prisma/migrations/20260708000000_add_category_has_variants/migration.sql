@@ -1,0 +1,1 @@
+ALTER TABLE "Category" ADD COLUMN "hasVariants" BOOLEAN NOT NULL DEFAULT true;

@@ -14,7 +14,7 @@ import {
   ChevronUp,
 } from 'lucide-react'
 import type { Product, ProductVariant, SizeLabel } from '@/features/products/types/product.types'
-import { SIZES } from '@/features/products/types/product.types'
+import { SIZE_SETS } from '@/features/products/types/product.types'
 
 interface ProductVariantModalProps {
   product: Product
@@ -32,7 +32,7 @@ const EMPTY_FORM: VariantFormState = {
   colorName: '',
   colorHex: '#000000',
   images: [],
-  sizes: { PP: 0, P: 0, M: 0, G: 0, GG: 0, XGG: 0 },
+  sizes: {},
 }
 
 function readFileAsDataURL(file: File): Promise<string> {
@@ -93,7 +93,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
   }
 
   function openEdit(v: ProductVariant) {
-    const sizes = { PP: 0, P: 0, M: 0, G: 0, GG: 0, XGG: 0 } as Record<SizeLabel, number>
+    const sizes: Record<SizeLabel, number> = {}
     v.sizes.forEach((s) => {
       sizes[s.size] = s.stock
     })
@@ -127,7 +127,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
         colorName: form.colorName.trim(),
         colorHex: form.colorHex,
         images: form.images,
-        sizes: SIZES.map((s) => ({ size: s, stock: form.sizes[s] })),
+        sizes: Object.entries(form.sizes).map(([size, stock]) => ({ size, stock })),
       }
 
       const url = editingId
@@ -175,6 +175,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
     (sum, v) => sum + v.sizes.reduce((s, sz) => s + sz.stock, 0),
     0
   )
+  const activeSizes = SIZE_SETS[product.category.sizeSet]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -405,12 +406,16 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                   {/* Tamanhos e estoque */}
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-gray-500">
-                      Estoque por tamanho
+                      {product.category.sizeSet === 'UNIQUE'
+                        ? 'Estoque desta cor'
+                        : 'Estoque por tamanho'}
                     </label>
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                      {SIZES.map((size) => (
-                        <div key={size} className="space-y-1 text-center">
-                          <span className="block text-xs font-bold text-gray-600">{size}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {activeSizes.map((size) => (
+                        <div key={size} className="w-16 space-y-1 text-center">
+                          <span className="block text-xs font-bold text-gray-600">
+                            {product.category.sizeSet === 'UNIQUE' ? 'Qtd' : size}
+                          </span>
                           <input
                             type="number"
                             min={0}

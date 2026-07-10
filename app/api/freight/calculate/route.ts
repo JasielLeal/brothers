@@ -50,10 +50,9 @@ export async function POST(req: NextRequest) {
       ])
     }
 
-    const meUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://melhorenvio.com.br/api/v2/me/shipment/calculate'
-        : 'https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate'
+    // Always hit the real Melhor Envio API — this endpoint only quotes a
+    // price (no shipment is created), so there's no need for a sandbox token.
+    const meUrl = 'https://melhorenvio.com.br/api/v2/me/shipment/calculate'
 
     const payload = {
       from: { postal_code: originCep },

@@ -7,6 +7,9 @@ import type {
   Brand,
   ProductType,
   NavCategory,
+  PopularCategory,
+  DealProduct,
+  SizeSetType,
 } from '@/features/products/types/product.types'
 import type { ProductInput as ProductSchemaInput } from '@/features/products/schemas/product.schema'
 import type { PaginatedResponse } from '@/types/global.types'
@@ -20,6 +23,8 @@ export const productKeys = {
   bestSellers: (limit: number) => [...productKeys.all, 'bestsellers', limit] as const,
   categories: () => [...productKeys.all, 'categories'] as const,
   navCategories: () => [...productKeys.all, 'navCategories'] as const,
+  popularCategories: (limit: number) => [...productKeys.all, 'popularCategories', limit] as const,
+  deals: (limit: number) => [...productKeys.all, 'deals', limit] as const,
   brands: () => [...productKeys.all, 'brands'] as const,
   productTypes: () => [...productKeys.all, 'productTypes'] as const,
 }
@@ -96,10 +101,31 @@ export function useNavCategories() {
   })
 }
 
+export function usePopularCategories(limit = 6) {
+  return useQuery<PopularCategory[]>({
+    queryKey: productKeys.popularCategories(limit),
+    queryFn: () => productsService.getPopularCategories(limit),
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useDeals(limit = 6) {
+  return useQuery<DealProduct[]>({
+    queryKey: productKeys.deals(limit),
+    queryFn: () => productsService.getDeals(limit),
+    staleTime: 1000 * 60,
+  })
+}
+
 export function useCreateCategory() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { name: string; slug: string }) => productsService.createCategory(input),
+    mutationFn: (input: {
+      name: string
+      slug: string
+      hasVariants?: boolean
+      sizeSet?: SizeSetType
+    }) => productsService.createCategory(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.categories() }),
   })
 }
@@ -107,8 +133,13 @@ export function useCreateCategory() {
 export function useUpdateCategory() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name?: string; slug?: string } }) =>
-      productsService.updateCategory(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { name?: string; slug?: string; hasVariants?: boolean; sizeSet?: SizeSetType }
+    }) => productsService.updateCategory(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.categories() }),
   })
 }

@@ -10,6 +10,8 @@ const createSchema = z.object({
     .string()
     .min(2)
     .regex(/^[a-z0-9-]+$/),
+  hasVariants: z.boolean().optional(),
+  sizeSet: z.enum(['CLOTHING', 'SHOE', 'UNIQUE']).optional(),
 })
 
 export async function GET() {

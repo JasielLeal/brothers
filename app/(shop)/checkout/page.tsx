@@ -337,16 +337,18 @@ export default function CheckoutPage() {
   }
 
   function saveCustomerData(data: CheckoutInput) {
-    if (deliveryType !== 'delivery') return
+    const isDelivery = deliveryType === 'delivery'
     const toSave: SavedCustomer = {
       fullName: data.fullName,
       phone: data.phone,
-      zipCode: data.zipCode ?? '',
-      street: data.street ?? '',
-      number: data.number ?? '',
-      complement: data.complement ?? '',
-      city: data.city ?? '',
-      state: data.state ?? '',
+      // Keep any previously saved address if this order was a store pickup —
+      // don't wipe it out just because this particular order skipped it.
+      zipCode: isDelivery ? (data.zipCode ?? '') : (savedCustomer?.zipCode ?? ''),
+      street: isDelivery ? (data.street ?? '') : (savedCustomer?.street ?? ''),
+      number: isDelivery ? (data.number ?? '') : (savedCustomer?.number ?? ''),
+      complement: isDelivery ? (data.complement ?? '') : (savedCustomer?.complement ?? ''),
+      city: isDelivery ? (data.city ?? '') : (savedCustomer?.city ?? ''),
+      state: isDelivery ? (data.state ?? '') : (savedCustomer?.state ?? ''),
     }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
