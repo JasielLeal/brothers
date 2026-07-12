@@ -8,6 +8,7 @@ import type {
   ProductType,
   NavCategory,
   PopularCategory,
+  StockByCategory,
   DealProduct,
   SizeSetType,
 } from '@/features/products/types/product.types'
@@ -24,6 +25,7 @@ export const productKeys = {
   categories: () => [...productKeys.all, 'categories'] as const,
   navCategories: () => [...productKeys.all, 'navCategories'] as const,
   popularCategories: (limit: number) => [...productKeys.all, 'popularCategories', limit] as const,
+  stockByCategory: () => [...productKeys.all, 'stockByCategory'] as const,
   deals: (limit: number) => [...productKeys.all, 'deals', limit] as const,
   brands: () => [...productKeys.all, 'brands'] as const,
   productTypes: () => [...productKeys.all, 'productTypes'] as const,
@@ -109,6 +111,14 @@ export function usePopularCategories(limit = 6) {
   })
 }
 
+export function useStockByCategory() {
+  return useQuery<StockByCategory[]>({
+    queryKey: productKeys.stockByCategory(),
+    queryFn: productsService.getStockByCategory,
+    staleTime: 1000 * 60,
+  })
+}
+
 export function useDeals(limit = 6) {
   return useQuery<DealProduct[]>({
     queryKey: productKeys.deals(limit),
@@ -125,8 +135,14 @@ export function useCreateCategory() {
       slug: string
       hasVariants?: boolean
       sizeSet?: SizeSetType
+      showInNav?: boolean
+      lowStockThreshold?: number | null
     }) => productsService.createCategory(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.categories() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() })
+      queryClient.invalidateQueries({ queryKey: productKeys.navCategories() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stockByCategory() })
+    },
   })
 }
 
@@ -138,9 +154,20 @@ export function useUpdateCategory() {
       data,
     }: {
       id: string
-      data: { name?: string; slug?: string; hasVariants?: boolean; sizeSet?: SizeSetType }
+      data: {
+        name?: string
+        slug?: string
+        hasVariants?: boolean
+        sizeSet?: SizeSetType
+        showInNav?: boolean
+        lowStockThreshold?: number | null
+      }
     }) => productsService.updateCategory(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.categories() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() })
+      queryClient.invalidateQueries({ queryKey: productKeys.navCategories() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stockByCategory() })
+    },
   })
 }
 
@@ -150,6 +177,8 @@ export function useDeleteCategory() {
     mutationFn: (id: string) => productsService.deleteCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.categories() })
+      queryClient.invalidateQueries({ queryKey: productKeys.navCategories() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stockByCategory() })
       queryClient.invalidateQueries({ queryKey: productKeys.lists() })
     },
   })

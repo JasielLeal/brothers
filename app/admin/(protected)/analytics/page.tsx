@@ -177,12 +177,12 @@ function Trend({ up, value, label }: { up: boolean; value: string; label: string
   return (
     <div className="mt-1.5 flex items-center gap-2">
       <span
-        className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${up ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}
+        className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${up ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}
       >
         {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
         {value}
       </span>
-      <span className="text-xs text-gray-400">{label}</span>
+      <span className="text-xs text-gray-400 dark:text-neutral-500">{label}</span>
     </div>
   )
 }
@@ -245,13 +245,13 @@ function KpiCarousel({ kpis }: { kpis: KpiItem[] }) {
       >
         {extended.map((k, i) => (
           <div key={i} className="w-full shrink-0 px-0.5">
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <p className="text-xs text-gray-400">{k.label}</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{k.value}</p>
+            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+              <p className="text-xs text-gray-400 dark:text-neutral-500">{k.label}</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{k.value}</p>
               {k.trend ? (
                 <Trend up={k.up} value={k.trend} label={k.sub} />
               ) : (
-                <p className="mt-1.5 text-xs text-gray-300">—</p>
+                <p className="mt-1.5 text-xs text-gray-300 dark:text-neutral-600">—</p>
               )}
               <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: k.accent }} />
             </div>
@@ -266,7 +266,7 @@ function KpiCarousel({ kpis }: { kpis: KpiItem[] }) {
               setAnimated(true)
               setIdx(i + 1)
             }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200'}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
           />
         ))}
       </div>
@@ -335,7 +335,7 @@ function SlideCarousel({ children }: { children: React.ReactNode[] }) {
               setAnimated(true)
               setIdx(i + 1)
             }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200'}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
           />
         ))}
       </div>
@@ -565,27 +565,30 @@ export default function AnalyticsPage() {
 
   /* ── sub-cards ── */
   const weekdayCard = (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-sm font-semibold text-gray-600">Pedidos por Dia</h2>
-      <p className="mt-0.5 mb-4 text-xs text-gray-400">Últimos 7 dias vs semana anterior</p>
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Pedidos por Dia</h2>
+      <p className="mt-0.5 mb-4 text-xs text-gray-400 dark:text-neutral-500">
+        Últimos 7 dias vs semana anterior
+      </p>
       <WeekdayBarChart data={weekCur} prev={weekPrev} labels={weekLabels} />
       <div className="mt-3 flex items-center gap-5">
-        <span className="flex items-center gap-1.5 text-xs text-gray-500">
+        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
           <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" /> Esta semana
         </span>
-        <span className="flex items-center gap-1.5 text-xs text-gray-500">
-          <span className="h-2.5 w-2.5 rounded-full bg-gray-200" /> Semana passada
+        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
+          <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" /> Semana
+          passada
         </span>
       </div>
     </div>
   )
 
   const topProductsCard = (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-sm font-semibold text-gray-600">Top Produtos</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400">Por receita gerada</p>
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Top Produtos</h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">Por receita gerada</p>
       {topProductsRev.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300">
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
           Sem vendas ainda
         </div>
       ) : (
@@ -594,14 +597,18 @@ export default function AnalyticsPage() {
             <div key={i}>
               <div className="mb-1 flex items-center justify-between text-xs">
                 <span className="flex items-center gap-2">
-                  <span className="w-4 text-[10px] font-bold text-gray-300">#{i + 1}</span>
-                  <span className="max-w-32.5 truncate font-medium text-gray-700">{p.name}</span>
+                  <span className="w-4 text-[10px] font-bold text-gray-300 dark:text-neutral-600">
+                    #{i + 1}
+                  </span>
+                  <span className="max-w-32.5 truncate font-medium text-gray-700 dark:text-neutral-200">
+                    {p.name}
+                  </span>
                 </span>
-                <span className="shrink-0 font-semibold text-gray-700">
+                <span className="shrink-0 font-semibold text-gray-700 dark:text-neutral-200">
                   {formatCurrency(p.revenue)}
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
                 <div
                   className="h-1.5 rounded-full bg-[#4A6CF7]"
                   style={{ width: `${(p.revenue / topProductsRev[0].revenue) * 100}%` }}
@@ -615,11 +622,15 @@ export default function AnalyticsPage() {
   )
 
   const paymentCard = (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-sm font-semibold text-gray-600">Formas de Pagamento</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400">Pedidos confirmados</p>
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
+        Formas de Pagamento
+      </h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">Pedidos confirmados</p>
       {confirmedOrders.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300">Sem dados</div>
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+          Sem dados
+        </div>
       ) : (
         <div className="space-y-3">
           {paymentStats.map((p) => (
@@ -627,14 +638,16 @@ export default function AnalyticsPage() {
               <div className="mb-1 flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                  <span className="font-medium text-gray-700">{p.label}</span>
+                  <span className="font-medium text-gray-700 dark:text-neutral-200">{p.label}</span>
                 </span>
-                <span className="text-gray-400">
+                <span className="text-gray-400 dark:text-neutral-500">
                   {p.count} pedido{p.count !== 1 ? 's' : ''} ·{' '}
-                  <span className="font-semibold text-gray-700">{p.pct}%</span>
+                  <span className="font-semibold text-gray-700 dark:text-neutral-200">
+                    {p.pct}%
+                  </span>
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
                 <div
                   className="h-1.5 rounded-full transition-all"
                   style={{ width: `${p.pct}%`, backgroundColor: p.color }}
@@ -651,7 +664,7 @@ export default function AnalyticsPage() {
     <div className="space-y-5">
       <div className="flex items-center">
         <MobileMenuButton />
-        <h1 className="text-xl font-bold text-gray-800">Analytics</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Analytics</h1>
       </div>
 
       {/* KPIs mobile */}
@@ -661,13 +674,16 @@ export default function AnalyticsPage() {
       {/* KPIs desktop */}
       <div className="hidden grid-cols-2 gap-5 lg:grid xl:grid-cols-4">
         {kpis.map((k) => (
-          <div key={k.label} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-            <p className="text-xs text-gray-400">{k.label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{k.value}</p>
+          <div
+            key={k.label}
+            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800"
+          >
+            <p className="text-xs text-gray-400 dark:text-neutral-500">{k.label}</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{k.value}</p>
             {k.trend ? (
               <Trend up={k.up} value={k.trend} label={k.sub} />
             ) : (
-              <p className="mt-1.5 text-xs text-gray-400">{k.sub}</p>
+              <p className="mt-1.5 text-xs text-gray-400 dark:text-neutral-500">{k.sub}</p>
             )}
             <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: k.accent }} />
           </div>
@@ -677,16 +693,19 @@ export default function AnalyticsPage() {
       {/* Receita mensal + Horário de Compras */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
         {/* Receita */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-3">
-          <h2 className="mb-1 text-sm font-semibold text-gray-600">Receita Mensal</h2>
-          <p className="mb-4 text-xs text-gray-400">Jan – {monthLabel}</p>
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-3 dark:bg-neutral-900 dark:ring-neutral-800">
+          <h2 className="mb-1 text-sm font-semibold text-gray-600 dark:text-neutral-300">
+            Receita Mensal
+          </h2>
+          <p className="mb-4 text-xs text-gray-400 dark:text-neutral-500">Jan – {monthLabel}</p>
           <MonthlyBarChart data={monthlyRev} prev={monthlyPrev} selectedMonth={selectedMonth} />
           <div className="mt-4 flex items-center gap-5">
-            <span className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
               <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" /> {currentYear}
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-200" /> {currentYear - 1}
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" />{' '}
+              {currentYear - 1}
             </span>
           </div>
           <div className="mt-4 flex flex-wrap gap-1.5">
@@ -694,7 +713,7 @@ export default function AnalyticsPage() {
               <button
                 key={m}
                 onClick={() => setSelectedMonth(selectedMonth === i ? null : i)}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${selectedMonth === i ? 'bg-[#4A6CF7] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${selectedMonth === i ? 'bg-[#4A6CF7] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700'}`}
               >
                 {m}
                 {selectedMonth === i && (
@@ -706,15 +725,17 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Horário de Compras */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-2">
-          <h2 className="text-sm font-semibold text-gray-600">Horário de Compras</h2>
-          <p className="mt-0.5 mb-5 text-xs text-gray-400">
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-2 dark:bg-neutral-900 dark:ring-neutral-800">
+          <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
+            Horário de Compras
+          </h2>
+          <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
             {confirmedOrders.length > 0
               ? `Baseado em ${confirmedOrders.length} pedidos confirmados`
               : 'Sem dados ainda'}
           </p>
           {confirmedOrders.length === 0 ? (
-            <div className="flex h-32 items-center justify-center text-sm text-gray-300">
+            <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
               Sem dados
             </div>
           ) : (
@@ -728,12 +749,16 @@ export default function AnalyticsPage() {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: seg.color }}
                       />
-                      <span className="font-medium text-gray-700">{seg.label}</span>
-                      <span className="text-gray-400">{seg.sublabel}</span>
+                      <span className="font-medium text-gray-700 dark:text-neutral-200">
+                        {seg.label}
+                      </span>
+                      <span className="text-gray-400 dark:text-neutral-500">{seg.sublabel}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-400">{seg.count} ped.</span>
-                      <span className="w-8 text-right font-bold text-gray-800">{seg.pct}%</span>
+                      <span className="text-gray-400 dark:text-neutral-500">{seg.count} ped.</span>
+                      <span className="w-8 text-right font-bold text-gray-800 dark:text-neutral-100">
+                        {seg.pct}%
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -754,7 +779,7 @@ export default function AnalyticsPage() {
         {paymentCard}
       </div>
 
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-gray-400 dark:text-neutral-500">
         {productsData?.total ?? 0} produtos · {confirmedOrders.length} pedidos confirmados ·
         Atualizado em {now.toLocaleDateString('pt-BR')}
       </p>

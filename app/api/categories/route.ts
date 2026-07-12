@@ -12,6 +12,8 @@ const createSchema = z.object({
     .regex(/^[a-z0-9-]+$/),
   hasVariants: z.boolean().optional(),
   sizeSet: z.enum(['CLOTHING', 'SHOE', 'UNIQUE']).optional(),
+  showInNav: z.boolean().optional(),
+  lowStockThreshold: z.number().int().min(0).nullable().optional(),
 })
 
 export async function GET() {
@@ -33,6 +35,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const parsed = createSchema.safeParse(body)
     if (!parsed.success) return badRequest(parsed.error.issues[0].message)
+
+    if (parsed.data.showInNav) {
+      const navCount = await prisma.category.count({ where: { showInNav: true } })
+      if (navCount >= 8) return badRequest('Máximo de 8 categorias na navbar')
+    }
 
     const category = await prisma.category.create({ data: parsed.data })
     return created(category)

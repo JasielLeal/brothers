@@ -13,6 +13,8 @@ const updateSchema = z.object({
     .optional(),
   hasVariants: z.boolean().optional(),
   sizeSet: z.enum(['CLOTHING', 'SHOE', 'UNIQUE']).optional(),
+  showInNav: z.boolean().optional(),
+  lowStockThreshold: z.number().int().min(0).nullable().optional(),
 })
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -35,6 +37,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json()
     const parsed = updateSchema.safeParse(body)
     if (!parsed.success) return badRequest(parsed.error.issues[0].message)
+
+    if (parsed.data.showInNav) {
+      const navCount = await prisma.category.count({ where: { showInNav: true, NOT: { id } } })
+      if (navCount >= 8) return badRequest('Máximo de 8 categorias na navbar')
+    }
 
     const category = await prisma.category.update({ where: { id }, data: parsed.data })
     return ok(category)

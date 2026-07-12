@@ -3,10 +3,11 @@
 import { useRef, useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
-import { useProducts } from '@/features/products/hooks/useProducts'
+import { useProducts, useStockByCategory } from '@/features/products/hooks/useProducts'
 import { useOrders } from '@/features/orders/hooks/useOrders'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { TrendingUp, TrendingDown, ChevronDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, ChevronDown, AlertTriangle } from 'lucide-react'
+import type { StockByCategory } from '@/features/products/types/product.types'
 
 const MONTH_NAMES = [
   'Jan',
@@ -182,7 +183,7 @@ function SlideCarousel({ children }: { children: React.ReactNode[] }) {
               setTransitioning(true)
               setIdx(i + 1)
             }}
-            className={`h-1.5 rounded-full transition-all ${i === realIdx ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200'}`}
+            className={`h-1.5 rounded-full transition-all ${i === realIdx ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
           />
         ))}
       </div>
@@ -194,6 +195,9 @@ function SlideCarousel({ children }: { children: React.ReactNode[] }) {
 export default function DashboardPage() {
   const { data: productsData } = useProducts({ limit: 100 })
   const { data: ordersData } = useOrders({ limit: 1000 })
+  const { data: stockByCategory = [] } = useStockByCategory()
+
+  const lowStockCategories = stockByCategory.filter((c) => c.isLow)
 
   const orders = ordersData?.data ?? []
   const confirmedOrders = orders.filter((o) => o.status === 'DELIVERED')
@@ -367,28 +371,43 @@ export default function DashboardPage() {
     <div className="space-y-5">
       <div className="flex items-center">
         <MobileMenuButton />
-        <h1 className="text-xl font-bold text-gray-800">Dashboard</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Dashboard</h1>
       </div>
+
+      {lowStockCategories.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500 dark:text-red-400" />
+          <div>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+              {lowStockCategories.length} categoria{lowStockCategories.length !== 1 ? 's' : ''} com
+              estoque baixo
+            </p>
+            <p className="mt-0.5 text-xs text-red-500 dark:text-red-400">
+              {lowStockCategories.map((c) => `${c.name} (${c.totalStock} un.)`).join(', ')}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── top row ──────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
         {/* Receita */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-3">
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-3 dark:bg-neutral-900 dark:ring-neutral-800">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-600">Receita</h2>
+            <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Receita</h2>
             {/* Month picker */}
             <div className="relative">
               <button
                 onClick={() => setMonthPickerOpen((o) => !o)}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
               >
                 {monthKeyToLabel(selectedMonth)}
-                <ChevronDown className="h-3 w-3 text-gray-400" />
+                <ChevronDown className="h-3 w-3 text-gray-400 dark:text-neutral-500" />
               </button>
               {monthPickerOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMonthPickerOpen(false)} />
-                  <div className="absolute right-0 z-20 mt-1 min-w-32 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-gray-100">
+                  <div className="absolute right-0 z-20 mt-1 min-w-32 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
                     {availableMonths.map((key) => (
                       <button
                         key={key}
@@ -396,7 +415,7 @@ export default function DashboardPage() {
                           setSelectedMonth(key)
                           setMonthPickerOpen(false)
                         }}
-                        className={`block w-full px-4 py-2 text-left text-xs transition-colors hover:bg-gray-50 ${selectedMonth === key ? 'font-semibold text-[#4A6CF7]' : 'text-gray-600'}`}
+                        className={`block w-full px-4 py-2 text-left text-xs transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800 ${selectedMonth === key ? 'font-semibold text-[#4A6CF7]' : 'text-gray-600 dark:text-neutral-300'}`}
                       >
                         {monthKeyToLabel(key)}
                       </button>
@@ -406,11 +425,13 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {formatCurrency(totalRevenue)}
+          </p>
           <div className="mt-1.5 mb-3 flex items-center gap-2">
             {revenueTrend !== null ? (
               <span
-                className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${revenueTrend >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}
+                className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${revenueTrend >= 0 ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}
               >
                 {revenueTrend >= 0 ? (
                   <TrendingUp className="h-3 w-3" />
@@ -420,19 +441,21 @@ export default function DashboardPage() {
                 {Math.abs(revenueTrend).toFixed(1)}%
               </span>
             ) : (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">—</span>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400 dark:bg-neutral-800 dark:text-neutral-500">
+                —
+              </span>
             )}
-            <span className="text-xs text-gray-400">vs mês anterior</span>
+            <span className="text-xs text-gray-400 dark:text-neutral-500">vs mês anterior</span>
           </div>
-          <p className="mb-4 text-xs text-gray-400">Vendas de {rangeLabel}</p>
+          <p className="mb-4 text-xs text-gray-400 dark:text-neutral-500">Vendas de {rangeLabel}</p>
           <BarChart curData={curRevenueByDay} prevData={prevRevenueByDay} />
           <div className="mt-3 flex items-center gap-5">
-            <span className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
               <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" />
               {monthLabel}
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-200" />
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" />
               Mês anterior
             </span>
           </div>
@@ -477,7 +500,9 @@ export default function DashboardPage() {
         />
       </div>
 
-      <p className="text-xs text-gray-400">
+      <StockByCategoryCard categories={stockByCategory} />
+
+      <p className="text-xs text-gray-400 dark:text-neutral-500">
         {productsData?.total ?? 0} produtos · {confirmedOrders.length} pedidos confirmados
       </p>
     </div>
@@ -498,14 +523,16 @@ function CategoriesCard({
 }) {
   const totalSold = categoryStats.reduce((s, c) => s + c.count, 0)
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-sm font-semibold text-gray-600">Categorias de Destaque</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400">
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
+        Categorias de Destaque
+      </h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
         {totalSold > 0 ? `${totalSold} unidades vendidas` : 'Sem vendas ainda'}
       </p>
 
       {categoryStats.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300">
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
           Sem vendas
         </div>
       ) : (
@@ -540,36 +567,40 @@ function TopProductsCard({
   }[]
 }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-sm font-semibold text-gray-600">Mais Vendidos</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400">Produtos com maior demanda</p>
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Mais Vendidos</h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
+        Produtos com maior demanda
+      </p>
 
       {products.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300">
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
           Sem vendas ainda
         </div>
       ) : (
         <div className="space-y-4">
           {products.map((p) => (
             <div key={p.productId} className="flex items-center gap-3">
-              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-neutral-800">
                 {p.image ? (
                   <Image src={p.image} alt={p.name} fill className="object-cover" sizes="40px" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-gray-300">
+                  <div className="flex h-full w-full items-center justify-center text-xs text-gray-300 dark:text-neutral-600">
                     ?
                   </div>
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-800">{p.name}</p>
+                <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
+                  {p.name}
+                </p>
                 {p.count > 0 && (
-                  <p className="text-[11px] text-gray-400">
+                  <p className="text-[11px] text-gray-400 dark:text-neutral-500">
                     {p.count} vendido{p.count !== 1 ? 's' : ''}
                   </p>
                 )}
               </div>
-              <span className="shrink-0 text-sm font-semibold text-gray-700">
+              <span className="shrink-0 text-sm font-semibold text-gray-700 dark:text-neutral-200">
                 {p.price > 0 ? formatCurrency(p.price) : '—'}
               </span>
             </div>
@@ -596,33 +627,37 @@ function WeeklyOrdersCard({
   label: string
 }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-600">Pedidos</h2>
+        <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Pedidos</h2>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{total.toLocaleString('pt-BR')}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+        {total.toLocaleString('pt-BR')}
+      </p>
       <div className="mt-1.5 mb-3 flex items-center gap-2">
         {trend !== null ? (
           <span
-            className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}
+            className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${trendUp ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}
           >
             {trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(trend).toFixed(1)}%
           </span>
         ) : (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">—</span>
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400 dark:bg-neutral-800 dark:text-neutral-500">
+            —
+          </span>
         )}
-        <span className="text-xs text-gray-400">vs semana anterior</span>
+        <span className="text-xs text-gray-400 dark:text-neutral-500">vs semana anterior</span>
       </div>
-      <p className="mb-4 text-xs text-gray-400">{label}</p>
+      <p className="mb-4 text-xs text-gray-400 dark:text-neutral-500">{label}</p>
       <LineChart curData={curData} prevData={prevData} />
       <div className="mt-3 flex items-center gap-5">
-        <span className="flex items-center gap-1.5 text-xs text-gray-500">
+        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
           <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" />
           Últimos 7 dias
         </span>
-        <span className="flex items-center gap-1.5 text-xs text-gray-500">
-          <span className="h-2.5 w-2.5 rounded-full bg-gray-200" />
+        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
+          <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" />
           Semana anterior
         </span>
       </div>
@@ -632,19 +667,23 @@ function WeeklyOrdersCard({
 
 function TotalSalesCard({ value, count }: { value: number; count: number }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-sm font-semibold text-gray-600">Total de Vendas</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400">
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Total de Vendas</h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
         {count > 0
           ? `${count} pedido${count !== 1 ? 's' : ''} confirmado${count !== 1 ? 's' : ''}`
           : 'Nenhuma venda ainda'}
       </p>
       {value === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300">Sem dados</div>
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+          Sem dados
+        </div>
       ) : (
         <div className="flex flex-col justify-center">
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(value)}</p>
-          <p className="mt-1 text-xs text-gray-400">Acumulado geral</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {formatCurrency(value)}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">Acumulado geral</p>
         </div>
       )}
     </div>
@@ -653,19 +692,76 @@ function TotalSalesCard({ value, count }: { value: number; count: number }) {
 
 function InvestedValueCard({ value, productsCount }: { value: number; productsCount: number }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-sm font-semibold text-gray-600">Valor Investido</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400">
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Valor Investido</h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
         {productsCount > 0
           ? `${productsCount} produto${productsCount !== 1 ? 's' : ''} com custo cadastrado`
           : 'Nenhum custo cadastrado'}
       </p>
       {value === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300">Sem dados</div>
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+          Sem dados
+        </div>
       ) : (
         <div className="flex flex-col justify-center">
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(value)}</p>
-          <p className="mt-1 text-xs text-gray-400">Custo × estoque atual</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {formatCurrency(value)}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">Custo × estoque atual</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StockByCategoryCard({ categories }: { categories: StockByCategory[] }) {
+  const sorted = [...categories].sort((a, b) => {
+    if (a.isLow !== b.isLow) return a.isLow ? -1 : 1
+    return a.totalStock - b.totalStock
+  })
+
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
+        Estoque por Categoria
+      </h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
+        Unidades em estoque de produtos ativos, por categoria
+      </p>
+
+      {sorted.length === 0 ? (
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+          Sem categorias
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {sorted.map((cat) => {
+            const max = Math.max(...sorted.map((c) => c.totalStock), 1)
+            const pct = Math.min((cat.totalStock / max) * 100, 100)
+            return (
+              <div key={cat.id} className="flex items-center gap-3">
+                <span className="w-28 shrink-0 truncate text-sm text-gray-700 dark:text-neutral-200">
+                  {cat.name}
+                </span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
+                  <div
+                    className={`h-full rounded-full ${cat.isLow ? 'bg-red-500' : 'bg-[#4A6CF7]'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="w-10 shrink-0 text-right text-sm font-semibold text-gray-700 dark:text-neutral-200">
+                  {cat.totalStock}
+                </span>
+                {cat.isLow && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-500 dark:bg-red-500/10 dark:text-red-400">
+                    <AlertTriangle className="h-3 w-3" />
+                    Baixo
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

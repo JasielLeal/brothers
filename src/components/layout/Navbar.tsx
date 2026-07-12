@@ -191,17 +191,17 @@ export function Navbar() {
           </Link>
 
           {/* Divider */}
-          <div className="hidden h-5 w-px bg-white/10 md:block" />
+          <div className="hidden h-5 w-px bg-white/10 lg:block" />
 
           {/* Categories nav */}
-          <nav className="hidden flex-1 items-center justify-center md:flex">
+          <nav className="hidden flex-1 items-center justify-center lg:flex">
             {navCategories.map((cat) => (
               <CategoryItem key={cat.id} cat={cat} transparent={transparent} />
             ))}
           </nav>
 
           {/* Right actions — desktop */}
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-2 lg:flex">
             <button
               onClick={openSearch}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white"
@@ -238,7 +238,7 @@ export function Navbar() {
           </div>
 
           {/* Mobile controls */}
-          <div className="ml-auto flex items-center gap-1 md:hidden">
+          <div className="ml-auto flex items-center gap-1 lg:hidden">
             <button
               className="rounded-xl p-2 text-white/60 hover:bg-white/10 hover:text-white"
               onClick={openSearch}
@@ -337,7 +337,7 @@ export function Navbar() {
 
       {/* Mobile nav menu */}
       {mobileOpen && (
-        <div className="fixed inset-x-0 top-17.25 z-40 border-b border-white/10 bg-[#0d0d0d] px-4 py-4 md:hidden">
+        <div className="fixed inset-x-0 top-17.25 z-40 border-b border-white/10 bg-[#0d0d0d] px-4 py-4 lg:hidden">
           <nav className="flex flex-col gap-1">
             <Link
               href="/favoritos"

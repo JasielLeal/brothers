@@ -57,6 +57,8 @@ export interface Category {
   slug: string
   hasVariants: boolean
   sizeSet: SizeSetType
+  showInNav: boolean
+  lowStockThreshold: number | null
   createdAt: string
   updatedAt: string
 }
@@ -115,6 +117,15 @@ export interface NavCategory {
   slug: string
   brands: { id: string; name: string; slug: string }[]
   types: { id: string; name: string; slug: string }[]
+}
+
+export interface StockByCategory {
+  id: string
+  name: string
+  slug: string
+  totalStock: number
+  lowStockThreshold: number | null
+  isLow: boolean
 }
 
 export interface PopularCategory {

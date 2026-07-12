@@ -6,8 +6,10 @@ export async function GET() {
     // Fetch categories + their associated brands/types without loading full product rows
     const [categories, brands, types] = await Promise.all([
       prisma.category.findMany({
+        where: { showInNav: true },
         select: { id: true, name: true, slug: true },
         orderBy: { name: 'asc' },
+        take: 8,
       }),
       prisma.brand.findMany({
         where: { products: { some: { isActive: true } } },
