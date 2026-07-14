@@ -9,6 +9,7 @@ import type {
   NavCategory,
   PopularCategory,
   StockByCategory,
+  StockByType,
   DealProduct,
   SizeSetType,
 } from '@/features/products/types/product.types'
@@ -26,6 +27,7 @@ export const productKeys = {
   navCategories: () => [...productKeys.all, 'navCategories'] as const,
   popularCategories: (limit: number) => [...productKeys.all, 'popularCategories', limit] as const,
   stockByCategory: () => [...productKeys.all, 'stockByCategory'] as const,
+  stockByType: () => [...productKeys.all, 'stockByType'] as const,
   deals: (limit: number) => [...productKeys.all, 'deals', limit] as const,
   brands: () => [...productKeys.all, 'brands'] as const,
   productTypes: () => [...productKeys.all, 'productTypes'] as const,
@@ -115,6 +117,14 @@ export function useStockByCategory() {
   return useQuery<StockByCategory[]>({
     queryKey: productKeys.stockByCategory(),
     queryFn: productsService.getStockByCategory,
+    staleTime: 1000 * 60,
+  })
+}
+
+export function useStockByType() {
+  return useQuery<StockByType[]>({
+    queryKey: productKeys.stockByType(),
+    queryFn: productsService.getStockByType,
     staleTime: 1000 * 60,
   })
 }
@@ -226,17 +236,29 @@ export function useProductTypes() {
 export function useCreateProductType() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { name: string; slug: string }) => productsService.createProductType(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.productTypes() }),
+    mutationFn: (input: { name: string; slug: string; lowStockThreshold?: number | null }) =>
+      productsService.createProductType(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.productTypes() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stockByType() })
+    },
   })
 }
 
 export function useUpdateProductType() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name?: string; slug?: string } }) =>
-      productsService.updateProductType(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.productTypes() }),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { name?: string; slug?: string; lowStockThreshold?: number | null }
+    }) => productsService.updateProductType(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.productTypes() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stockByType() })
+    },
   })
 }
 
@@ -244,7 +266,10 @@ export function useDeleteProductType() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => productsService.deleteProductType(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.productTypes() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.productTypes() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stockByType() })
+    },
   })
 }
 

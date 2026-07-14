@@ -9,6 +9,7 @@ import type {
   NavCategory,
   PopularCategory,
   StockByCategory,
+  StockByType,
   DealProduct,
   SizeSetType,
 } from '@/features/products/types/product.types'
@@ -88,6 +89,11 @@ export const productsService = {
     return data
   },
 
+  async getStockByType(): Promise<StockByType[]> {
+    const { data } = await api.get<StockByType[]>('/catalog/stock-by-type')
+    return data
+  },
+
   async getDeals(limit = 6): Promise<DealProduct[]> {
     const { data } = await api.get<DealProduct[]>('/products/deals', { params: { limit } })
     return data
@@ -148,14 +154,18 @@ export const productsService = {
     return data
   },
 
-  async createProductType(input: { name: string; slug: string }): Promise<ProductType> {
+  async createProductType(input: {
+    name: string
+    slug: string
+    lowStockThreshold?: number | null
+  }): Promise<ProductType> {
     const { data } = await api.post<ProductType>('/product-types', input)
     return data
   },
 
   async updateProductType(
     id: string,
-    input: { name?: string; slug?: string }
+    input: { name?: string; slug?: string; lowStockThreshold?: number | null }
   ): Promise<ProductType> {
     const { data } = await api.put<ProductType>(`/product-types/${id}`, input)
     return data

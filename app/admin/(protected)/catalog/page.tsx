@@ -235,8 +235,9 @@ function EntityModal({
                 className="flex h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm transition outline-none focus:border-[#4A6CF7] focus:ring-2 focus:ring-[#4A6CF7]/20 dark:border-neutral-700 dark:bg-neutral-900"
               />
               <p className="text-[11px] text-gray-400 dark:text-neutral-500">
-                Quando o estoque total desta categoria cair para este valor ou menos, ela aparece
-                como estoque baixo no dashboard. Deixe em branco para não monitorar.
+                Quando o estoque total {label === 'categoria' ? 'desta' : 'deste'} {label} cair para
+                este valor ou menos, {label === 'categoria' ? 'ela aparece' : 'ele aparece'} como
+                estoque baixo no dashboard. Deixe em branco para não monitorar.
               </p>
             </div>
           )}
@@ -682,6 +683,7 @@ export default function CatalogPage() {
           EmptyIcon={Layers}
           items={types}
           isLoading={loadingType}
+          showLowStockThreshold
           onCreate={(data) => createType(data)}
           onUpdate={(id, data) => updateType({ id, data })}
           onDelete={(id) => deleteType(id)}

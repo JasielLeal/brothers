@@ -11,6 +11,7 @@ const updateSchema = z.object({
     .min(2)
     .regex(/^[a-z0-9-]+$/)
     .optional(),
+  lowStockThreshold: z.number().int().min(0).nullable().optional(),
 })
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

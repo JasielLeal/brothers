@@ -10,6 +10,7 @@ const createSchema = z.object({
     .string()
     .min(2)
     .regex(/^[a-z0-9-]+$/),
+  lowStockThreshold: z.number().int().min(0).nullable().optional(),
 })
 
 export async function GET() {

@@ -75,6 +75,7 @@ export interface ProductType {
   id: string
   name: string
   slug: string
+  lowStockThreshold: number | null
   createdAt: string
   updatedAt: string
 }
@@ -120,6 +121,15 @@ export interface NavCategory {
 }
 
 export interface StockByCategory {
+  id: string
+  name: string
+  slug: string
+  totalStock: number
+  lowStockThreshold: number | null
+  isLow: boolean
+}
+
+export interface StockByType {
   id: string
   name: string
   slug: string

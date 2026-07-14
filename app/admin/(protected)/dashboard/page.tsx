@@ -3,11 +3,15 @@
 import { useRef, useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
-import { useProducts, useStockByCategory } from '@/features/products/hooks/useProducts'
+import {
+  useProducts,
+  useStockByCategory,
+  useStockByType,
+} from '@/features/products/hooks/useProducts'
 import { useOrders } from '@/features/orders/hooks/useOrders'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { TrendingUp, TrendingDown, ChevronDown, AlertTriangle } from 'lucide-react'
-import type { StockByCategory } from '@/features/products/types/product.types'
+import type { StockByCategory, StockByType } from '@/features/products/types/product.types'
 
 const MONTH_NAMES = [
   'Jan',
@@ -196,14 +200,18 @@ export default function DashboardPage() {
   const { data: productsData } = useProducts({ limit: 100 })
   const { data: ordersData } = useOrders({ limit: 1000 })
   const { data: stockByCategory = [] } = useStockByCategory()
-
-  const lowStockCategories = stockByCategory.filter((c) => c.isLow)
+  const { data: stockByType = [] } = useStockByType()
 
   const orders = ordersData?.data ?? []
   const confirmedOrders = orders.filter((o) => o.status === 'DELIVERED')
 
   const investedValue = useMemo(
     () => (productsData?.data ?? []).reduce((sum, p) => sum + (p.costPrice ?? 0) * p.stock, 0),
+    [productsData]
+  )
+
+  const stockSaleValue = useMemo(
+    () => (productsData?.data ?? []).reduce((sum, p) => sum + p.price * p.stock, 0),
     [productsData]
   )
 
@@ -374,21 +382,6 @@ export default function DashboardPage() {
         <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Dashboard</h1>
       </div>
 
-      {lowStockCategories.length > 0 && (
-        <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500 dark:text-red-400" />
-          <div>
-            <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-              {lowStockCategories.length} categoria{lowStockCategories.length !== 1 ? 's' : ''} com
-              estoque baixo
-            </p>
-            <p className="mt-0.5 text-xs text-red-500 dark:text-red-400">
-              {lowStockCategories.map((c) => `${c.name} (${c.totalStock} un.)`).join(', ')}
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* ── top row ──────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
         {/* Receita */}
@@ -465,6 +458,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-5 xl:col-span-2">
           <InvestedValueCard
             value={investedValue}
+            saleValue={stockSaleValue}
             productsCount={productsData?.data.filter((p) => (p.costPrice ?? 0) > 0).length ?? 0}
           />
           <TotalSalesCard value={totalSales} count={confirmedOrders.length} />
@@ -500,7 +494,10 @@ export default function DashboardPage() {
         />
       </div>
 
-      <StockByCategoryCard categories={stockByCategory} />
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <StockByCategoryCard categories={stockByCategory} />
+        <StockByTypeCard types={stockByType} />
+      </div>
 
       <p className="text-xs text-gray-400 dark:text-neutral-500">
         {productsData?.total ?? 0} produtos · {confirmedOrders.length} pedidos confirmados
@@ -690,25 +687,51 @@ function TotalSalesCard({ value, count }: { value: number; count: number }) {
   )
 }
 
-function InvestedValueCard({ value, productsCount }: { value: number; productsCount: number }) {
+function InvestedValueCard({
+  value,
+  saleValue,
+  productsCount,
+}: {
+  value: number
+  saleValue: number
+  productsCount: number
+}) {
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Valor Investido</h2>
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
+        Valor do Estoque
+      </h2>
       <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
         {productsCount > 0
           ? `${productsCount} produto${productsCount !== 1 ? 's' : ''} com custo cadastrado`
           : 'Nenhum custo cadastrado'}
       </p>
-      {value === 0 ? (
+      {value === 0 && saleValue === 0 ? (
         <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
           Sem dados
         </div>
       ) : (
-        <div className="flex flex-col justify-center">
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {formatCurrency(value)}
-          </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">Custo × estoque atual</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatCurrency(value)}
+            </p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">
+              Valor Investido
+              <br />
+              Custo × estoque atual
+            </p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatCurrency(saleValue)}
+            </p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">
+              Valor de Venda
+              <br />
+              Preço × estoque atual
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -754,6 +777,59 @@ function StockByCategoryCard({ categories }: { categories: StockByCategory[] }) 
                   {cat.totalStock}
                 </span>
                 {cat.isLow && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-500 dark:bg-red-500/10 dark:text-red-400">
+                    <AlertTriangle className="h-3 w-3" />
+                    Baixo
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StockByTypeCard({ types }: { types: StockByType[] }) {
+  const sorted = [...types].sort((a, b) => {
+    if (a.isLow !== b.isLow) return a.isLow ? -1 : 1
+    return a.totalStock - b.totalStock
+  })
+
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
+        Estoque por Tipo
+      </h2>
+      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
+        Unidades em estoque de produtos ativos, por tipo
+      </p>
+
+      {sorted.length === 0 ? (
+        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+          Sem tipos
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {sorted.map((type) => {
+            const max = Math.max(...sorted.map((t) => t.totalStock), 1)
+            const pct = Math.min((type.totalStock / max) * 100, 100)
+            return (
+              <div key={type.id} className="flex items-center gap-3">
+                <span className="w-28 shrink-0 truncate text-sm text-gray-700 dark:text-neutral-200">
+                  {type.name}
+                </span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
+                  <div
+                    className={`h-full rounded-full ${type.isLow ? 'bg-red-500' : 'bg-[#4A6CF7]'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="w-10 shrink-0 text-right text-sm font-semibold text-gray-700 dark:text-neutral-200">
+                  {type.totalStock}
+                </span>
+                {type.isLow && (
                   <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-500 dark:bg-red-500/10 dark:text-red-400">
                     <AlertTriangle className="h-3 w-3" />
                     Baixo
