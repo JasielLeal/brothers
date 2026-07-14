@@ -7,9 +7,9 @@ import { requireAdmin, requireAuth } from '@/lib/auth-guard'
 const createSchema = z.object({
   name: z.string().min(2),
   contactName: z.string().min(2),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   phone: z.string().min(10),
-  cnpj: z.string().min(14),
+  cnpj: z.string().min(14).optional(),
   categories: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
 })

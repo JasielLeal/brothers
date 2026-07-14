@@ -2,7 +2,9 @@ export interface Supplier {
   id: string
   name: string
   contactName: string
+  email: string | null
   phone: string
+  cnpj: string | null
   categories: string[]
   isActive: boolean
   createdAt: string

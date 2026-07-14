@@ -203,8 +203,14 @@ export default function AdminSuppliersPage() {
     setForm((f) => ({ ...f, categories: f.categories.filter((c) => c !== cat) }))
   }
 
+  function isFormValid(f: SupplierInput) {
+    return (
+      f.name.trim().length >= 2 && f.contactName.trim().length >= 2 && f.phone.trim().length >= 10
+    )
+  }
+
   async function handleSave() {
-    if (!form.name.trim()) return
+    if (!isFormValid(form)) return
     if (editing) {
       await updateSupplier.mutateAsync({ id: editing.id, input: form })
     } else {
@@ -551,7 +557,7 @@ export default function AdminSuppliersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
                   <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-neutral-400">
-                    Responsável
+                    Responsável *
                   </span>
                   <input
                     value={form.contactName}
@@ -562,7 +568,7 @@ export default function AdminSuppliersPage() {
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-neutral-400">
-                    Telefone
+                    Telefone *
                   </span>
                   <input
                     value={form.phone}
@@ -638,7 +644,7 @@ export default function AdminSuppliersPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!form.name.trim() || isSaving}
+                disabled={!isFormValid(form) || isSaving}
                 className="flex items-center gap-1.5 rounded-xl bg-[#4A6CF7] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-40"
               >
                 {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}

@@ -200,9 +200,9 @@ model Supplier {
   id          String    @id @default(cuid())
   name        String
   contactName String
-  email       String    @unique
+  email       String?   @unique
   phone       String
-  cnpj        String    @unique
+  cnpj        String?   @unique
   categories  String[]
   isActive    Boolean   @default(true)
   boletos     Boleto[]

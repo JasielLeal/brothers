@@ -1,0 +1,2 @@
+ALTER TABLE "Category" ADD COLUMN "showInNav" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Category" ADD COLUMN "lowStockThreshold" INTEGER;

@@ -516,7 +516,7 @@ function EntityTable({
                     {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => {
                           setEditing(item)
