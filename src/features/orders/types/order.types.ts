@@ -50,8 +50,10 @@ export interface CreateOrderPayload {
   paymentMethod: PaymentMethod
   deliveryType: DeliveryType
   items: CreateOrderItemPayload[]
-  discountAmount?: number
   couponCode?: string | null
+  /** Manual discount (venda presencial) — mutually exclusive with couponCode */
+  discountType?: 'PERCENTAGE' | 'FIXED' | null
+  discountValue?: number | null
   shippingCost?: number
   shippingService?: string | null
   street?: string | null

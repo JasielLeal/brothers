@@ -120,12 +120,15 @@ export function Footer() {
           <p className="text-xs text-white/30">
             © {new Date().getFullYear()} Brothers Outlet. Todos os direitos reservados.
           </p>
-          <div className="flex flex-wrap gap-4 text-xs text-white/30">
-            <Link href="/privacidade" className="hover:text-white">
-              Política de Privacidade
-            </Link>
-            <Link href="/termos" className="hover:text-white">
-              Termos
+          <div className="flex flex-wrap gap-1 text-xs text-white/30">
+            Desenvolvido com experiência por
+            <Link
+              href="https://kaizestudios.com.br"
+              className="font-semibold text-white hover:text-white"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Kaize Studios
             </Link>
           </div>
         </div>

@@ -28,6 +28,8 @@ const createSchema = z.object({
   deliveryType: z.enum(['DELIVERY', 'PICKUP']),
   items: z.array(orderItemSchema).min(1),
   couponCode: z.string().optional().nullable(),
+  discountType: z.enum(['PERCENTAGE', 'FIXED']).optional().nullable(),
+  discountValue: z.number().min(0).optional().nullable(),
   shippingCost: z.number().min(0).default(0),
   shippingService: z.string().optional().nullable(),
   street: z.string().optional().nullable(),
@@ -86,8 +88,27 @@ export async function POST(req: NextRequest) {
     const parsed = createSchema.safeParse(body)
     if (!parsed.success) return badRequest(parsed.error.issues[0].message)
 
-    const { items, couponCode, shippingCost, shippingService, ...orderData } = parsed.data
+    const {
+      items,
+      couponCode,
+      discountType,
+      discountValue,
+      shippingCost,
+      shippingService,
+      ...orderData
+    } = parsed.data
     const normalizedCode = couponCode?.toUpperCase().trim() ?? null
+
+    // Manual discount (venda presencial) requires an authenticated admin session —
+    // this endpoint is also used by the public checkout, which must never set it.
+    if (discountType) {
+      const session = await auth()
+      if (!session?.user) return unauthorized()
+      if (normalizedCode)
+        return badRequest('Não é possível aplicar cupom e desconto manual no mesmo pedido')
+      if (discountType === 'PERCENTAGE' && (discountValue ?? 0) > 100)
+        return badRequest('Desconto percentual não pode ultrapassar 100%')
+    }
 
     // ── 1. Read prices from DB — never trust the client ──────
     const dbProducts = await prisma.product.findMany({
@@ -237,6 +258,11 @@ export async function POST(req: NextRequest) {
             AND ("maxUses" IS NULL OR "usedCount" < "maxUses")
         `
           if (consumed === 0) throw new Error('Cupom não pôde ser aplicado (esgotado ou expirado)')
+        } else if (discountType && discountValue) {
+          discountAmount =
+            discountType === 'PERCENTAGE'
+              ? (subtotal * Math.min(discountValue, 100)) / 100
+              : Math.min(discountValue, subtotal)
         }
 
         const total = Math.max(0, subtotal - discountAmount + resolvedShippingCost)

@@ -139,6 +139,8 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
   const [customerPhone, setCustomerPhone] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH')
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('PICKUP')
+  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED' | null>(null)
+  const [discountValue, setDiscountValue] = useState('')
   const [street, setStreet] = useState('')
   const [city, setCity] = useState('')
   const [uf, setUf] = useState('')
@@ -205,7 +207,15 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
   const { mutate: createOrder, isPending } = useCreateOrder()
 
-  const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const parsedDiscountValue = Number(discountValue.replace(',', '.')) || 0
+  const discountAmount =
+    !discountType || parsedDiscountValue <= 0
+      ? 0
+      : discountType === 'PERCENTAGE'
+        ? (subtotal * Math.min(parsedDiscountValue, 100)) / 100
+        : Math.min(parsedDiscountValue, subtotal)
+  const total = Math.max(0, subtotal - discountAmount)
 
   function maskPhone(value: string) {
     const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -291,6 +301,15 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
         customerPhone: customerPhone.trim(),
         paymentMethod,
         deliveryType,
+        ...(discountType && parsedDiscountValue > 0
+          ? {
+              discountType,
+              discountValue:
+                discountType === 'PERCENTAGE'
+                  ? Math.min(parsedDiscountValue, 100)
+                  : Math.min(parsedDiscountValue, subtotal),
+            }
+          : {}),
         items: cart.map(({ productId, productName, quantity, color, size }) => ({
           productId,
           productName,
@@ -682,6 +701,43 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
+            {/* Desconto */}
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+                Desconto
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['PERCENTAGE', 'FIXED'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setDiscountType((prev) => (prev === t ? null : t))
+                      setDiscountValue('')
+                    }}
+                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${discountType === t ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-600'}`}
+                  >
+                    {t === 'PERCENTAGE' ? '% Percentual' : 'R$ Valor fixo'}
+                  </button>
+                ))}
+              </div>
+              {discountType && (
+                <div className="relative mt-2">
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-xs font-semibold text-gray-400 dark:text-neutral-500">
+                    {discountType === 'PERCENTAGE' ? '%' : 'R$'}
+                  </span>
+                  <input
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value.replace(/[^0-9,.]/g, ''))}
+                    placeholder={discountType === 'PERCENTAGE' ? 'Ex: 10' : 'Ex: 20,00'}
+                    inputMode="decimal"
+                    autoFocus
+                    className="w-full rounded-xl border border-gray-200 bg-gray-100 py-2 pr-4 pl-9 text-sm text-gray-800 placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Entrega */}
             <div>
               <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
@@ -760,7 +816,19 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
             <p className="text-xs text-gray-400 dark:text-neutral-500">
               {cart.length} {cart.length === 1 ? 'item' : 'itens'}
             </p>
-            <p className="text-lg font-bold text-[#4A6CF7]">{formatCurrency(total)}</p>
+            {discountAmount > 0 ? (
+              <>
+                <p className="text-xs text-gray-400 line-through dark:text-neutral-500">
+                  {formatCurrency(subtotal)}
+                </p>
+                <p className="text-lg font-bold text-[#4A6CF7]">{formatCurrency(total)}</p>
+                <p className="text-xs font-medium text-green-600 dark:text-green-400">
+                  -{formatCurrency(discountAmount)} de desconto
+                </p>
+              </>
+            ) : (
+              <p className="text-lg font-bold text-[#4A6CF7]">{formatCurrency(total)}</p>
+            )}
           </div>
           <div className="flex gap-3">
             <button

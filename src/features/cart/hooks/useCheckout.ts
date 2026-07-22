@@ -18,7 +18,6 @@ const PAYMENT_MAP: Record<CheckoutInput['paymentMethod'], PaymentMethod> = {
 
 interface CheckoutOptions {
   couponCode?: string | null
-  discountAmount?: number
   shippingCost?: number
   shippingService?: string
 }
@@ -31,7 +30,6 @@ export function useCheckout() {
     mutationFn: async ({
       data,
       couponCode,
-      discountAmount = 0,
       shippingCost = 0,
       shippingService,
     }: { data: CheckoutInput } & CheckoutOptions) => {
@@ -54,7 +52,6 @@ export function useCheckout() {
             color: item.color ?? null,
           })
         ),
-        discountAmount,
         couponCode: couponCode ?? null,
         shippingCost,
         shippingService: shippingService ?? null,

@@ -433,7 +433,6 @@ export default function CheckoutPage() {
               checkout({
                 data,
                 couponCode: appliedCoupon?.code,
-                discountAmount,
                 shippingCost,
                 shippingService: selectedShipping?.name,
               })
