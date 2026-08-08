@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ordersService, type OrderFilters } from '@/features/orders/services/orders.service'
-import type { CreateOrderPayload, Order, OrderStatus } from '@/features/orders/types/order.types'
+import type {
+  CreateOrderPayload,
+  Order,
+  OrderStatus,
+  ExchangeItemPayload,
+  UpdateOrderDiscountPayload,
+} from '@/features/orders/types/order.types'
 import type { PaginatedResponse } from '@/types/global.types'
 import { productKeys } from '@/features/products/hooks/useProducts'
 
@@ -68,6 +74,29 @@ export function useUpdateOrderStatus() {
           }
         }
       )
+      queryClient.invalidateQueries({ queryKey: orderKeys.all })
+      queryClient.invalidateQueries({ queryKey: productKeys.all })
+    },
+  })
+}
+
+export function useUpdateOrderDiscount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateOrderDiscountPayload }) =>
+      ordersService.updateOrderDiscount(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all })
+    },
+  })
+}
+
+export function useExchangeOrderItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orderId, payload }: { orderId: string; payload: ExchangeItemPayload }) =>
+      ordersService.exchangeOrderItem(orderId, payload),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.all })
       queryClient.invalidateQueries({ queryKey: productKeys.all })
     },

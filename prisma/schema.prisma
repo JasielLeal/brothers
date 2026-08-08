@@ -140,6 +140,7 @@ model Order {
   paymentMethod PaymentMethod @default(PIX)
   deliveryType  DeliveryType  @default(DELIVERY)
   items         OrderItem[]
+  exchanges     OrderItemExchange[]
   total         Float
   discountAmount Float        @default(0)
   couponCode      String?
@@ -173,6 +174,28 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+model OrderItemExchange {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  oldProductId    String?
+  oldProductName  String
+  oldQuantity     Int
+  oldPrice        Float
+  oldSize         String?
+  oldColor        String?
+  newProductId    String?
+  newProductName  String
+  newQuantity     Int
+  newPrice        Float
+  newSize         String?
+  newColor        String?
+  priceDifference Float
+  createdAt       DateTime @default(now())
+
+  @@index([orderId])
 }
 
 enum OrderStatus {

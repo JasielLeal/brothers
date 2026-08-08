@@ -20,17 +20,24 @@ import {
   ShoppingCart,
   Printer,
   MessageCircle,
+  ArrowLeftRight,
+  History,
+  Tag,
+  Pencil,
 } from 'lucide-react'
 import {
   useAdminOrders,
   useUpdateOrderStatus,
   useCreateOrder,
+  useExchangeOrderItem,
+  useUpdateOrderDiscount,
 } from '@/features/orders/hooks/useOrders'
 import { useProducts } from '@/features/products/hooks/useProducts'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { formatDate } from '@/utils/formatDate'
 import type {
   Order,
+  OrderItem,
   OrderStatus,
   PaymentMethod,
   DeliveryType,
@@ -1102,12 +1109,331 @@ function printReceipt(order: Order) {
   }
 }
 
+/* ── Exchange Item Modal ──────────────────────────────────── */
+function ExchangeItemModal({
+  order,
+  item,
+  onClose,
+}: {
+  order: Order
+  item: OrderItem
+  onClose: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [variants, setVariants] = useState<VariantInfo[]>([])
+  const [loadingVariants, setLoadingVariants] = useState(false)
+  const [pickedVariant, setPickedVariant] = useState<VariantInfo | null>(null)
+  const [pickedSize, setPickedSize] = useState<string | null>(null)
+  const [quantity, setQuantity] = useState(item.quantity)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const { data: productsData, isLoading: loadingProducts } = useProducts({
+    search: debouncedSearch || undefined,
+    isActive: true,
+    limit: 8,
+  })
+  const products = (productsData?.data ?? []).filter((p) => p.id !== item.productId)
+
+  const { mutate: exchangeItem, isPending, error } = useExchangeOrderItem()
+
+  async function handlePickProduct(product: Product) {
+    setSelectedProduct(product)
+    setPickedVariant(null)
+    setPickedSize(null)
+    setLoadingVariants(true)
+    try {
+      const res = await fetch(`/api/products/${product.id}/variants`)
+      const d = await res.json()
+      setVariants(Array.isArray(d) ? d : (d.data ?? []))
+    } finally {
+      setLoadingVariants(false)
+    }
+  }
+
+  const needsVariant = variants.length > 0
+  const canConfirm =
+    selectedProduct != null && quantity > 0 && (!needsVariant || (pickedVariant && pickedSize))
+
+  const oldLineTotal = item.price * item.quantity
+  const newLineTotal = (selectedProduct?.price ?? 0) * quantity
+  const priceDifference = newLineTotal - oldLineTotal
+
+  function handleConfirm() {
+    if (!canConfirm || !selectedProduct) return
+    exchangeItem(
+      {
+        orderId: order.id,
+        payload: {
+          itemId: item.id,
+          newProductId: selectedProduct.id,
+          quantity,
+          size: pickedSize,
+          color: pickedVariant?.colorName ?? null,
+        },
+      },
+      { onSuccess: onClose }
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-background flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl shadow-2xl">
+        <div className="flex items-center justify-between border-b px-5 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#4A6CF7]/10">
+              <ArrowLeftRight className="h-4 w-4 text-[#4A6CF7]" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-800 dark:text-neutral-100">
+              Trocar item
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="hover:bg-muted rounded-md p-1.5 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="mb-4 rounded-xl bg-gray-50 p-3 dark:bg-neutral-950">
+            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+              Item atual
+            </p>
+            <p className="text-sm font-medium text-gray-800 dark:text-neutral-100">
+              {item.productName}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-neutral-500">
+              Qtd: {item.quantity} · {formatCurrency(item.price)} un.
+              {item.color && ` · ${item.color}`}
+              {item.size && ` · ${item.size}`}
+            </p>
+          </div>
+
+          <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+            Novo produto
+          </p>
+          <div className="relative mb-3">
+            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-neutral-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar produto..."
+              className="w-full rounded-xl border border-gray-200 bg-gray-100 py-2 pr-4 pl-9 text-sm text-gray-700 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:bg-neutral-900"
+            />
+          </div>
+
+          {!selectedProduct ? (
+            loadingProducts ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-300 dark:text-neutral-600" />
+              </div>
+            ) : products.length === 0 ? (
+              <p className="py-6 text-center text-xs text-gray-400 dark:text-neutral-500">
+                {search ? 'Nenhum produto encontrado.' : 'Digite para buscar produtos.'}
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {products.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handlePickProduct(p)}
+                    className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-2.5 text-left transition-colors hover:border-[#4A6CF7]/40 dark:border-neutral-800 dark:bg-neutral-900"
+                  >
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+                      {p.images[0] && (
+                        <Image
+                          src={p.images[0]}
+                          alt={p.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
+                        {p.name}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-neutral-500">
+                        {formatCurrency(p.price)} · Estoque: {p.stock}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-xl border border-[#4A6CF7]/40 bg-[#4A6CF7]/5 p-2.5">
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+                  {selectedProduct.images[0] && (
+                    <Image
+                      src={selectedProduct.images[0]}
+                      alt={selectedProduct.name}
+                      fill
+                      className="object-cover"
+                      sizes="40px"
+                    />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
+                    {selectedProduct.name}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-neutral-500">
+                    {formatCurrency(selectedProduct.price)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProduct(null)
+                    setVariants([])
+                  }}
+                  className="text-xs font-semibold text-[#4A6CF7] hover:underline"
+                >
+                  Trocar
+                </button>
+              </div>
+
+              {loadingVariants ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-300 dark:text-neutral-600" />
+                </div>
+              ) : needsVariant ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {variants.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => {
+                          setPickedVariant(v)
+                          setPickedSize(null)
+                        }}
+                        className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium transition-all ${pickedVariant?.id === v.id ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400'}`}
+                      >
+                        <div
+                          className="h-2.5 w-2.5 rounded-full border border-gray-300 dark:border-neutral-600"
+                          style={{ backgroundColor: v.colorHex ?? '#888' }}
+                        />
+                        {v.colorName}
+                      </button>
+                    ))}
+                  </div>
+                  {pickedVariant && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {pickedVariant.sizes
+                        .filter((s) => s.stock > 0)
+                        .map((s) => (
+                          <button
+                            key={s.size}
+                            type="button"
+                            onClick={() => setPickedSize(s.size)}
+                            className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-all ${pickedSize === s.size ? 'border-[#4A6CF7] bg-[#4A6CF7] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-[#4A6CF7] dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200'}`}
+                          >
+                            {s.size} <span className="opacity-60">({s.stock})</span>
+                          </button>
+                        ))}
+                      {pickedVariant.sizes.every((s) => s.stock === 0) && (
+                        <p className="text-xs text-red-400">Sem estoque para esta cor</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              <div>
+                <p className="mb-1.5 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+                  Quantidade
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-neutral-700 dark:text-neutral-300"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="w-6 text-center text-sm font-semibold text-gray-700 dark:text-neutral-200">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-neutral-700 dark:text-neutral-300"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 dark:bg-neutral-950">
+                <span className="text-xs text-gray-500 dark:text-neutral-400">
+                  Diferença no total do pedido
+                </span>
+                <span
+                  className={`text-sm font-bold ${priceDifference > 0 ? 'text-red-500' : priceDifference < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-neutral-400'}`}
+                >
+                  {priceDifference > 0 ? '+' : ''}
+                  {formatCurrency(priceDifference)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <p className="mt-3 text-xs font-medium text-red-500">
+              {(error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+                'Não foi possível trocar o item.'}
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 border-t px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={!canConfirm || isPending}
+            className="flex items-center gap-2 rounded-xl bg-[#4A6CF7] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-50"
+          >
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Confirmar troca
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Order Drawer ─────────────────────────────────────────── */
 function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) {
   const { mutate: updateStatus, isPending } = useUpdateOrderStatus()
+  const { mutate: updateDiscount, isPending: isSavingDiscount } = useUpdateOrderDiscount()
 
   const canConfirm = order.status !== 'DELIVERED' && order.status !== 'CANCELLED'
   const canCancel = order.status !== 'CANCELLED'
+  const canEditDiscount = order.status !== 'DELIVERED' && order.status !== 'CANCELLED'
+
+  const [exchangingItem, setExchangingItem] = useState<OrderItem | null>(null)
+  const [editingDiscount, setEditingDiscount] = useState(false)
+  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED' | null>(null)
+  const [discountValue, setDiscountValue] = useState('')
 
   function handleConfirm() {
     updateStatus({ id: order.id, status: 'DELIVERED' }, { onSuccess: onClose })
@@ -1115,6 +1441,27 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
 
   function handleCancel() {
     updateStatus({ id: order.id, status: 'CANCELLED' }, { onSuccess: onClose })
+  }
+
+  function startEditDiscount() {
+    setDiscountType(order.couponCode ? null : 'PERCENTAGE')
+    setDiscountValue('')
+    setEditingDiscount(true)
+  }
+
+  function handleSaveDiscount() {
+    const parsedValue = Number(discountValue.replace(',', '.')) || 0
+    updateDiscount(
+      { id: order.id, payload: { discountType, discountValue: parsedValue } },
+      { onSuccess: () => setEditingDiscount(false) }
+    )
+  }
+
+  function handleRemoveDiscount() {
+    updateDiscount(
+      { id: order.id, payload: { discountType: null, discountValue: 0 } },
+      { onSuccess: () => setEditingDiscount(false) }
+    )
   }
 
   const address = order.street
@@ -1205,9 +1552,21 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                         )}
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                      {formatCurrency(item.price * item.quantity)}
-                    </p>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <p className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
+                        {formatCurrency(item.price * item.quantity)}
+                      </p>
+                      {order.status !== 'CANCELLED' && (
+                        <button
+                          type="button"
+                          onClick={() => setExchangingItem(item)}
+                          className="flex items-center gap-1 text-[11px] font-semibold text-[#4A6CF7] hover:underline"
+                        >
+                          <ArrowLeftRight className="h-3 w-3" />
+                          Trocar
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -1259,6 +1618,82 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                       {formatCurrency(order.total)}
                     </p>
                   </div>
+
+                  {canEditDiscount && !editingDiscount && (
+                    <button
+                      type="button"
+                      onClick={startEditDiscount}
+                      className="flex items-center gap-1 pt-1 text-[11px] font-semibold text-[#4A6CF7] hover:underline"
+                    >
+                      {discount > 0 ? <Pencil className="h-3 w-3" /> : <Tag className="h-3 w-3" />}
+                      {discount > 0 ? 'Editar desconto' : 'Aplicar desconto'}
+                    </button>
+                  )}
+
+                  {editingDiscount && (
+                    <div className="space-y-2 border-t border-[#4A6CF7]/10 pt-2">
+                      {order.couponCode ? (
+                        <p className="text-xs text-gray-500 dark:text-neutral-400">
+                          Este pedido já usa o cupom <strong>{order.couponCode}</strong>. Remova o
+                          cupom para aplicar um desconto manual.
+                        </p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-2">
+                            {(['PERCENTAGE', 'FIXED'] as const).map((t) => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => {
+                                  setDiscountType(t)
+                                  setDiscountValue('')
+                                }}
+                                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${discountType === t ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-white text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400'}`}
+                              >
+                                {t === 'PERCENTAGE' ? '% Percentual' : 'R$ Valor fixo'}
+                              </button>
+                            ))}
+                          </div>
+                          <input
+                            value={discountValue}
+                            onChange={(e) =>
+                              setDiscountValue(e.target.value.replace(/[^0-9,.]/g, ''))
+                            }
+                            placeholder={discountType === 'PERCENTAGE' ? 'Ex: 10' : 'Ex: 20,00'}
+                            inputMode="decimal"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-[#4A6CF7] focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingDiscount(false)}
+                              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                            >
+                              Cancelar
+                            </button>
+                            {discount > 0 && (
+                              <button
+                                type="button"
+                                onClick={handleRemoveDiscount}
+                                disabled={isSavingDiscount}
+                                className="flex-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:opacity-60 dark:border-red-500/20 dark:text-red-400"
+                              >
+                                Remover
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleSaveDiscount}
+                              disabled={isSavingDiscount || !discountType || !discountValue}
+                              className="flex-1 rounded-lg bg-[#4A6CF7] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#3a5ce5] disabled:opacity-50"
+                            >
+                              Aplicar
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </>
               )
             })()}
@@ -1273,6 +1708,48 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
               <p className="text-sm text-gray-600 dark:text-neutral-300">{address}</p>
             </div>
           </div>
+
+          {order.exchanges && order.exchanges.length > 0 && (
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+                <History className="h-3.5 w-3.5" />
+                Histórico de trocas
+              </p>
+              <div className="space-y-2">
+                {order.exchanges.map((ex) => (
+                  <div
+                    key={ex.id}
+                    className="rounded-xl bg-gray-50/70 px-3 py-2.5 text-xs dark:bg-neutral-950"
+                  >
+                    <p className="text-gray-600 dark:text-neutral-300">
+                      <span className="text-gray-400 line-through dark:text-neutral-500">
+                        {ex.oldProductName}
+                      </span>{' '}
+                      →{' '}
+                      <span className="font-medium text-gray-800 dark:text-neutral-100">
+                        {ex.newProductName}
+                      </span>
+                    </p>
+                    <div className="mt-1 flex items-center justify-between text-gray-400 dark:text-neutral-500">
+                      <span>{formatDate(ex.createdAt)}</span>
+                      <span
+                        className={
+                          ex.priceDifference > 0
+                            ? 'font-semibold text-red-500'
+                            : ex.priceDifference < 0
+                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              : ''
+                        }
+                      >
+                        {ex.priceDifference > 0 ? '+' : ''}
+                        {formatCurrency(ex.priceDifference)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <p className="text-xs text-gray-400 dark:text-neutral-500">
             Última atualização: {formatDate(order.updatedAt)}
@@ -1367,6 +1844,13 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
           )}
         </div>
       </div>
+      {exchangingItem && (
+        <ExchangeItemModal
+          order={order}
+          item={exchangingItem}
+          onClose={() => setExchangingItem(null)}
+        />
+      )}
     </>
   )
 }

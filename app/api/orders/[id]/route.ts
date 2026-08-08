@@ -8,6 +8,8 @@ import { requireAdmin } from '@/lib/auth-guard'
 const updateSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']).optional(),
   notes: z.string().optional().nullable(),
+  discountType: z.enum(['PERCENTAGE', 'FIXED']).optional().nullable(),
+  discountValue: z.number().min(0).optional().nullable(),
 })
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -61,10 +63,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const isCancelling = parsed.data.status === 'CANCELLED' && existing.status !== 'CANCELLED'
 
+    const { discountType, discountValue, ...restUpdate } = parsed.data
+    const hasDiscountUpdate = discountType !== undefined || discountValue !== undefined
+    let discountFields: { discountAmount: number; total: number } | undefined
+
+    if (hasDiscountUpdate) {
+      if (existing.status === 'DELIVERED' || existing.status === 'CANCELLED')
+        return badRequest('Não é possível alterar desconto de um pedido já fechado')
+      if (existing.couponCode) return badRequest('Remova o cupom antes de aplicar desconto manual')
+      if (discountType === 'PERCENTAGE' && (discountValue ?? 0) > 100)
+        return badRequest('Desconto percentual não pode ultrapassar 100%')
+
+      const subtotal = existing.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+      const discountAmount =
+        !discountType || !discountValue || discountValue <= 0
+          ? 0
+          : discountType === 'PERCENTAGE'
+            ? (subtotal * Math.min(discountValue, 100)) / 100
+            : Math.min(discountValue, subtotal)
+      const total = Math.max(0, subtotal - discountAmount + existing.shippingCost)
+      discountFields = { discountAmount, total }
+    }
+
     const order = await prisma.$transaction(async (tx) => {
       const updated = await tx.order.update({
         where: { id },
-        data: parsed.data,
+        data: { ...restUpdate, ...discountFields },
         include: { items: true },
       })
 

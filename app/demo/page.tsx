@@ -51,12 +51,12 @@ const categories = [
   {
     name: 'Acessórios',
     count: 16,
-    image: 'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80',
   },
   {
     name: 'Moletons',
     count: 14,
-    image: 'https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600&q=80',
   },
 ]
 
@@ -73,7 +73,7 @@ interface FakeProduct {
 const bestSellers: FakeProduct[] = [
   {
     id: 'bs-1',
-    name: 'Camiseta Oversize Essential Preta',
+    name: 'Camiseta Oversize Essential Branca',
     category: 'Camisetas',
     price: 129.9,
     originalPrice: 179.9,
@@ -82,7 +82,7 @@ const bestSellers: FakeProduct[] = [
   },
   {
     id: 'bs-2',
-    name: 'Calça Cargo Wide Leg Verde',
+    name: 'Calça Jeans Slim Escura',
     category: 'Calças',
     price: 189.9,
     originalPrice: 249.9,
@@ -91,7 +91,7 @@ const bestSellers: FakeProduct[] = [
   },
   {
     id: 'bs-3',
-    name: 'Tênis Chunky Branco Street',
+    name: 'Tênis Nike Vermelho Flyknit',
     category: 'Calçados',
     price: 349.9,
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
@@ -99,7 +99,7 @@ const bestSellers: FakeProduct[] = [
   },
   {
     id: 'bs-4',
-    name: 'Jaqueta Corta-Vento Preta',
+    name: 'Jaqueta Bomber Caramelo',
     category: 'Jaquetas',
     price: 219.9,
     originalPrice: 289.9,
@@ -108,7 +108,7 @@ const bestSellers: FakeProduct[] = [
   },
   {
     id: 'bs-5',
-    name: 'Boné Aba Reta Snapback',
+    name: 'Boné Aba Reta Snapback Branco',
     category: 'Acessórios',
     price: 79.9,
     image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&q=80',
@@ -116,24 +116,24 @@ const bestSellers: FakeProduct[] = [
   },
   {
     id: 'bs-6',
-    name: 'Camiseta Regular Básica Cinza',
+    name: 'Camiseta Básica Premium',
     category: 'Camisetas',
     price: 59.9,
-    image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=600&q=80',
     stock: 30,
   },
   {
     id: 'bs-7',
-    name: 'Calça Jogger Slim Preta',
+    name: 'Calça Jeans Patchwork Destroyed',
     category: 'Calças',
     price: 149.9,
     originalPrice: 199.9,
-    image: 'https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600&q=80',
     stock: 8,
   },
   {
     id: 'bs-8',
-    name: 'Tênis Skate Casual Preto',
+    name: 'Tênis Puma Branco Casual',
     category: 'Calçados',
     price: 299.9,
     image: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&q=80',
@@ -141,11 +141,11 @@ const bestSellers: FakeProduct[] = [
   },
   {
     id: 'bs-9',
-    name: 'Camiseta Estampada Street Branca',
+    name: 'Camiseta Estampada Stay Wild Preta',
     category: 'Camisetas',
     price: 99.9,
     originalPrice: 139.9,
-    image: 'https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1503341733017-1901578f9f1e?w=600&q=80',
     stock: 17,
   },
   {
@@ -153,12 +153,12 @@ const bestSellers: FakeProduct[] = [
     name: 'Calça Jeans Reta Azul',
     category: 'Calças',
     price: 179.9,
-    image: 'https://images.unsplash.com/photo-1548126032-079a0fb0099d?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1604176354204-9268737828e4?w=600&q=80',
     stock: 12,
   },
   {
     id: 'bs-11',
-    name: 'Sandália Slide Confort',
+    name: 'Tênis Nike Branco Street',
     category: 'Calçados',
     price: 89.9,
     originalPrice: 119.9,
@@ -167,8 +167,8 @@ const bestSellers: FakeProduct[] = [
   },
   {
     id: 'bs-12',
-    name: 'Jaqueta Bomber Verde Militar',
-    category: 'Jaquetas',
+    name: 'Conjunto Moletom Cropped Amarelo',
+    category: 'Moletons',
     price: 259.9,
     originalPrice: 329.9,
     image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=80',
@@ -179,7 +179,7 @@ const bestSellers: FakeProduct[] = [
 const newArrivals: FakeProduct[] = [
   {
     id: 'na-1',
-    name: 'Camiseta Cropped Tie-Dye Rosa',
+    name: 'Camiseta Estampada Hotel Branca',
     category: 'Camisetas',
     price: 89.9,
     image: 'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=600&q=80',
@@ -187,17 +187,16 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-2',
-    name: 'Calça Alfaiataria Bege',
+    name: 'Calça Jeans Reta Marinho',
     category: 'Calças',
     price: 209.9,
     originalPrice: 259.9,
-    image:
-      'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?q=80&w=697&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&q=80',
     stock: 7,
   },
   {
     id: 'na-3',
-    name: 'Tênis Runner Performance Cinza',
+    name: 'Tênis Skate Vinho Retrô',
     category: 'Calçados',
     price: 379.9,
     image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=600&q=80',
@@ -205,7 +204,7 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-4',
-    name: 'Moletom Canguru Oversize Preto',
+    name: 'Poncho Tricô Fringe Bege',
     category: 'Moletons',
     price: 219.9,
     originalPrice: 279.9,
@@ -214,15 +213,15 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-5',
-    name: 'Boné Trucker Bordado',
+    name: 'Fone de Ouvido Bluetooth',
     category: 'Acessórios',
     price: 69.9,
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&q=80',
     stock: 22,
   },
   {
     id: 'na-6',
-    name: 'Camiseta Regata Basic Branca',
+    name: 'Camiseta Cropped Estampada Preta',
     category: 'Camisetas',
     price: 49.9,
     image: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?w=600&q=80',
@@ -230,7 +229,7 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-7',
-    name: 'Bermuda Cargo Bege',
+    name: 'Calça Jeans Ripped Clara',
     category: 'Calças',
     price: 139.9,
     originalPrice: 179.9,
@@ -239,7 +238,7 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-8',
-    name: 'Tênis Slip-On Casual Preto',
+    name: 'Tênis Nike Pastel Feminino',
     category: 'Calçados',
     price: 219.9,
     image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80',
@@ -247,8 +246,8 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-9',
-    name: 'Jaqueta Jeans Clássica',
-    category: 'Jaquetas',
+    name: 'Camiseta Estampada Caveira Preta',
+    category: 'Camisetas',
     price: 229.9,
     originalPrice: 289.9,
     image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&q=80',
@@ -256,7 +255,7 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-10',
-    name: 'Óculos de Sol Retrô',
+    name: 'Mochila Explorer Bicolor',
     category: 'Acessórios',
     price: 99.9,
     originalPrice: 149.9,
@@ -265,8 +264,8 @@ const newArrivals: FakeProduct[] = [
   },
   {
     id: 'na-11',
-    name: 'Camiseta Manga Longa Listrada',
-    category: 'Camisetas',
+    name: 'Tênis Adidas Branco Listrado',
+    category: 'Calçados',
     price: 109.9,
     image: 'https://images.unsplash.com/photo-1555274175-6cbf6f3b137b?w=600&q=80',
     stock: 14,

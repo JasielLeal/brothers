@@ -1,5 +1,11 @@
 import { api } from '@/lib/api/axios'
-import type { Order, CreateOrderPayload, OrderStatus } from '@/features/orders/types/order.types'
+import type {
+  Order,
+  CreateOrderPayload,
+  OrderStatus,
+  ExchangeItemPayload,
+  UpdateOrderDiscountPayload,
+} from '@/features/orders/types/order.types'
 import type { PaginatedResponse } from '@/types/global.types'
 
 export interface OrderFilters {
@@ -33,6 +39,16 @@ export const ordersService = {
 
   async updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
     const { data } = await api.patch<Order>(`/orders/${id}`, { status })
+    return data
+  },
+
+  async updateOrderDiscount(id: string, payload: UpdateOrderDiscountPayload): Promise<Order> {
+    const { data } = await api.patch<Order>(`/orders/${id}`, payload)
+    return data
+  },
+
+  async exchangeOrderItem(orderId: string, payload: ExchangeItemPayload): Promise<Order> {
+    const { data } = await api.post<Order>(`/orders/${orderId}/exchange`, payload)
     return data
   },
 }
