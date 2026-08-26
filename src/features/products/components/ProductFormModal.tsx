@@ -78,6 +78,61 @@ async function resolveVariantImages(images: VariantImage[]): Promise<string[]> {
   )
 }
 
+/** Reorder handle that works with mouse and touch alike (native HTML5 drag-and-drop
+ *  never fires from touch input, which is what made this un-draggable on mobile). */
+function DraggableThumb({
+  index,
+  dragIndexRef,
+  onDrop,
+  className,
+  children,
+}: {
+  index: number
+  dragIndexRef: { current: number | null }
+  onDrop: (index: number) => void
+  className: string
+  children: React.ReactNode
+}) {
+  const [isDragging, setIsDragging] = useState(false)
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    dragIndexRef.current = index
+    setIsDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (dragIndexRef.current === null) return
+    const dropTarget = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest<HTMLElement>('[data-drag-index]')
+    setIsDragging(false)
+    if (dropTarget) {
+      onDrop(Number(dropTarget.dataset.dragIndex))
+    } else {
+      dragIndexRef.current = null
+    }
+  }
+
+  return (
+    <div
+      data-drag-index={index}
+      onPointerDown={handlePointerDown}
+      onPointerMove={(e) => dragIndexRef.current !== null && e.preventDefault()}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={() => {
+        dragIndexRef.current = null
+        setIsDragging(false)
+      }}
+      style={{ touchAction: 'none' }}
+      className={`${className} ${isDragging ? 'opacity-40' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
 export function ProductFormModal({ open, product, onClose }: ProductFormModalProps) {
   const { data: categories } = useCategories()
   const { data: brands } = useBrands()
@@ -122,9 +177,6 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
     })
   }
 
-  function onFlatDragStart(i: number) {
-    flatDragIndex.current = i
-  }
   function onFlatDrop(i: number) {
     if (flatDragIndex.current === null || flatDragIndex.current === i) return
     setFlatImages((imgs) => {
@@ -242,9 +294,6 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
     })
   }
 
-  function onVariantDragStart(i: number) {
-    variantDragIndex.current = i
-  }
   function onVariantDrop(i: number) {
     if (variantDragIndex.current === null || variantDragIndex.current === i) return
     const next = [...variantForm.images]
@@ -784,12 +833,11 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                   {flatImages.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {flatImages.map((img, i) => (
-                        <div
+                        <DraggableThumb
                           key={i}
-                          draggable
-                          onDragStart={() => onFlatDragStart(i)}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={() => onFlatDrop(i)}
+                          index={i}
+                          dragIndexRef={flatDragIndex}
+                          onDrop={onFlatDrop}
                           className="group relative h-14 w-14 cursor-grab overflow-hidden rounded-lg border border-gray-200 active:cursor-grabbing"
                         >
                           <Image
@@ -809,7 +857,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                           >
                             <Trash className="h-4 w-4 text-white" />
                           </button>
-                        </div>
+                        </DraggableThumb>
                       ))}
                     </div>
                   )}
@@ -1009,12 +1057,11 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                       {variantForm.images.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {variantForm.images.map((img, i) => (
-                            <div
+                            <DraggableThumb
                               key={i}
-                              draggable
-                              onDragStart={() => onVariantDragStart(i)}
-                              onDragOver={(e) => e.preventDefault()}
-                              onDrop={() => onVariantDrop(i)}
+                              index={i}
+                              dragIndexRef={variantDragIndex}
+                              onDrop={onVariantDrop}
                               className="group relative h-14 w-14 cursor-grab overflow-hidden rounded-lg border border-gray-200 active:cursor-grabbing"
                             >
                               <Image
@@ -1034,7 +1081,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                               >
                                 <Trash className="h-4 w-4 text-white" />
                               </button>
-                            </div>
+                            </DraggableThumb>
                           ))}
                         </div>
                       )}
