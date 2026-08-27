@@ -337,7 +337,7 @@ export function Navbar() {
 
       {/* Mobile nav menu */}
       {mobileOpen && (
-        <div className="fixed inset-x-0 top-17.25 z-40 border-b border-white/10 bg-[#0d0d0d] px-4 py-4 lg:hidden">
+        <div className="fixed inset-x-0 top-17.25 z-40 max-h-[calc(100dvh-4.3125rem)] overflow-y-auto overscroll-contain border-b border-white/10 bg-[#0d0d0d] px-4 py-4 lg:hidden">
           <nav className="flex flex-col gap-1">
             <Link
               href="/favoritos"
