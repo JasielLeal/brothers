@@ -58,6 +58,7 @@ function SearchContent() {
   const urlCategoryId = searchParams.get('categoryId') ?? null
   const urlBrandId = searchParams.get('brandId') ?? null
   const urlTypeId = searchParams.get('typeId') ?? null
+  const urlSize = searchParams.get('size') ?? null
 
   const [selectedPriceRange, setSelectedPriceRange] = useState<number | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
@@ -65,12 +66,14 @@ function SearchContent() {
   )
   const [selectedTypes, setSelectedTypes] = useState<string[]>(urlTypeId ? [urlTypeId] : [])
   const [selectedBrands, setSelectedBrands] = useState<string[]>(urlBrandId ? [urlBrandId] : [])
+  const [selectedSize, setSelectedSize] = useState<string | null>(urlSize)
   const [openCatId, setOpenCatId] = useState<string | null>(urlCategoryId)
   const [filterOpen, setFilterOpen] = useState(false)
 
   const [prevCatId, setPrevCatId] = useState(urlCategoryId)
   const [prevBrandId, setPrevBrandId] = useState(urlBrandId)
   const [prevTypeId, setPrevTypeId] = useState(urlTypeId)
+  const [prevSize, setPrevSize] = useState(urlSize)
 
   if (prevCatId !== urlCategoryId) {
     setPrevCatId(urlCategoryId)
@@ -86,6 +89,10 @@ function SearchContent() {
     setPrevTypeId(urlTypeId)
     setSelectedTypes(urlTypeId ? [urlTypeId] : [])
   }
+  if (prevSize !== urlSize) {
+    setPrevSize(urlSize)
+    setSelectedSize(urlSize)
+  }
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -97,6 +104,7 @@ function SearchContent() {
     categoryId: selectedCategories[0] || undefined,
     brandId: selectedBrands[0] || undefined,
     typeId: selectedTypes[0] || undefined,
+    size: selectedSize || undefined,
     minPrice: activeRange?.min || undefined,
     maxPrice: activeRange?.max || undefined,
   })
@@ -162,13 +170,15 @@ function SearchContent() {
     (selectedPriceRange !== null ? 1 : 0) +
     selectedCategories.length +
     selectedTypes.length +
-    selectedBrands.length
+    selectedBrands.length +
+    (selectedSize ? 1 : 0)
 
   function clearAll() {
     setSelectedPriceRange(null)
     setSelectedCategories([])
     setSelectedTypes([])
     setSelectedBrands([])
+    setSelectedSize(null)
   }
 
   /* ── filtros compartilhados ── */
@@ -315,6 +325,16 @@ function SearchContent() {
               ? 'Buscando…'
               : `${totalCount} produto${totalCount !== 1 ? 's' : ''} encontrado${totalCount !== 1 ? 's' : ''}`}
           </p>
+          {selectedSize && (
+            <button
+              type="button"
+              onClick={() => setSelectedSize(null)}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#4a9fd4]/40 bg-[#4a9fd4]/10 px-3 py-1 text-xs font-medium text-[#4a9fd4] transition-colors hover:bg-[#4a9fd4]/20"
+            >
+              Tamanho: {selectedSize}
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         <button

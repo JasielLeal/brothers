@@ -21,6 +21,7 @@ function toParams(filters: ProductFilters) {
   if (filters.categoryId) params.categoryId = filters.categoryId
   if (filters.brandId) params.brandId = filters.brandId
   if (filters.typeId) params.typeId = filters.typeId
+  if (filters.size) params.size = filters.size
   if (filters.isFeatured !== undefined) params.isFeatured = filters.isFeatured
   if (filters.isActive !== undefined) params.isActive = filters.isActive
   if (filters.page) params.page = filters.page

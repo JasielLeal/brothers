@@ -161,6 +161,7 @@ export interface ProductFilters {
   categoryId?: string
   brandId?: string
   typeId?: string
+  size?: string
   minPrice?: number
   maxPrice?: number
   isFeatured?: boolean

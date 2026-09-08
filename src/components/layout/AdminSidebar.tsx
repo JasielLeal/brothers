@@ -20,6 +20,7 @@ import {
   Ticket,
   Sun,
   Moon,
+  Link2,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { cn } from '@/utils/cn'
@@ -33,6 +34,7 @@ const MAIN_NAV = [
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/admin/products', label: 'Produtos', icon: Package },
   { href: '/admin/catalog', label: 'Catálogo', icon: Layers },
+  { href: '/admin/gerar-link', label: 'Gerar Link', icon: Link2 },
 ]
 
 const BOTTOM_NAV: { href: string; label: string; icon: React.ElementType }[] = []

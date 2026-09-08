@@ -125,6 +125,7 @@ export async function GET(req: NextRequest) {
     const categoryId = searchParams.get('categoryId') ?? undefined
     const brandId = searchParams.get('brandId') ?? undefined
     const typeId = searchParams.get('typeId') ?? undefined
+    const size = searchParams.get('size') ?? undefined
     const isFeatured = searchParams.get('isFeatured')
     const isActive = searchParams.get('isActive')
     const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined
@@ -139,6 +140,7 @@ export async function GET(req: NextRequest) {
       ...(categoryId && { categoryId }),
       ...(brandId && { brandId }),
       ...(typeId && { typeId }),
+      ...(size && { variants: { some: { sizes: { some: { size } } } } }),
       ...(isFeatured != null && { isFeatured: isFeatured === 'true' }),
       // Non-admins can never see inactive products — enforce isActive:true
       ...(isAdmin ? isActive != null && { isActive: isActive === 'true' } : { isActive: true }),
