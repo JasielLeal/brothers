@@ -265,7 +265,16 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
   const margin = Number(marginPercent)
   const hasPriceCalc = cost > 0 && margin >= 0
 
+  // Skip the first run: on mount `cost`/`margin` hold the product's saved
+  // values, and recalculating then would clobber a saved `price` that
+  // doesn't match cost*margin (e.g. margin left at 0). Only auto-recalculate
+  // once the user actually edits cost or margin themselves.
+  const skipNextCalc = useRef(true)
   useEffect(() => {
+    if (skipNextCalc.current) {
+      skipNextCalc.current = false
+      return
+    }
     if (cost > 0 && margin >= 0) {
       setValue('price', Math.round(cost * (1 + margin / 100) * 100) / 100, { shouldValidate: true })
     }
