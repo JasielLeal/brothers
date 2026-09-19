@@ -91,6 +91,7 @@ model Product {
   supplier      Supplier?   @relation(fields: [supplierId], references: [id])
   isActive      Boolean     @default(true)
   isFeatured    Boolean     @default(false)
+  deletedAt     DateTime?
   orderItems    OrderItem[]
   variants      ProductVariant[]
   couponProducts CouponProduct[]
@@ -104,6 +105,7 @@ model Product {
   @@index([isFeatured])
   @@index([isActive, isFeatured])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 model ProductVariant {

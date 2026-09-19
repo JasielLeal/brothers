@@ -136,6 +136,7 @@ export async function GET(req: NextRequest) {
     const searchIds = search.trim() ? await getSearchIds(search) : null
 
     const where = {
+      deletedAt: null,
       ...(searchIds !== null && { id: { in: searchIds } }),
       ...(categoryId && { categoryId }),
       ...(brandId && { brandId }),
@@ -183,13 +184,13 @@ export async function GET(req: NextRequest) {
     if (total === 0 && search.trim()) {
       suggestedProducts = isAdmin
         ? await prisma.product.findMany({
-            where: { isActive: true },
+            where: { isActive: true, deletedAt: null },
             include: adminInclude,
             orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
             take: 8,
           })
         : await prisma.product.findMany({
-            where: { isActive: true },
+            where: { isActive: true, deletedAt: null },
             select: publicSelect,
             orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
             take: 8,

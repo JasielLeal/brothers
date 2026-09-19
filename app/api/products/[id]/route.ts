@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
-import { ok, badRequest, unauthorized, notFound, conflict, internalError } from '@/lib/api-response'
+import { ok, badRequest, unauthorized, notFound, internalError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth-guard'
 
 const updateSchema = z.object({
@@ -64,18 +64,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const isAdmin = !!session?.user
     const { id } = await params
     const bySlug = req.nextUrl.searchParams.get('by') === 'slug'
+    const where = { ...(bySlug ? { slug: id } : { id }), deletedAt: null }
 
     const product = isAdmin
-      ? await prisma.product.findUnique({
-          where: bySlug ? { slug: id } : { id },
-          include: adminInclude,
-        })
-      : await prisma.product.findUnique({
-          where: bySlug ? { slug: id } : { id },
-          select: publicSelect,
-        })
+      ? await prisma.product.findUnique({ where, include: adminInclude })
+      : await prisma.product.findUnique({ where, select: publicSelect })
 
     if (!product) return notFound('Produto não encontrado')
+    // Non-admins can never see inactive products — enforce isActive:true
+    if (!isAdmin && !product.isActive) return notFound('Produto não encontrado')
     return ok(product)
   } catch (e) {
     return internalError(e)
@@ -114,15 +111,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params
 
-    // Guard: prevent deleting products that appear in orders
-    const orderCount = await prisma.orderItem.count({ where: { productId: id } })
-    if (orderCount > 0) {
-      return conflict(
-        `Este produto está vinculado a ${orderCount} pedido(s) e não pode ser excluído. Desative-o em vez de excluir.`
-      )
-    }
+    // Soft delete: keep the row (order history references it) and just
+    // stamp deletedAt, instead of removing it from the database.
+    const result = await prisma.product.updateMany({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date(), isActive: false },
+    })
+    if (result.count === 0) return notFound('Produto não encontrado')
 
-    await prisma.product.delete({ where: { id } })
     return ok({ success: true })
   } catch (e) {
     return internalError(e)

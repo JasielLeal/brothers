@@ -72,7 +72,9 @@ export async function POST(req: NextRequest) {
     if (existing) return badRequest('Já existe um cupom com esse código')
 
     if (productIds && productIds.length > 0) {
-      const validCount = await prisma.product.count({ where: { id: { in: productIds } } })
+      const validCount = await prisma.product.count({
+        where: { id: { in: productIds }, deletedAt: null },
+      })
       if (validCount !== productIds.length) return badRequest('Um ou mais produtos são inválidos')
     }
 

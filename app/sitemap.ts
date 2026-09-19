@@ -6,7 +6,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, categories] = await Promise.all([
     prisma.product.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       select: { id: true, updatedAt: true },
     }),
     prisma.category.findMany({ select: { slug: true } }),

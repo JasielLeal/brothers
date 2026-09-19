@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
     if (topItems.length === 0) {
       const fallback = await prisma.product.findMany({
-        where: { isActive: true, isFeatured: true },
+        where: { isActive: true, isFeatured: true, deletedAt: null },
         select: publicSelect,
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     const productIds = topItems.map((i) => i.productId).filter((id): id is string => id != null)
 
     const products = await prisma.product.findMany({
-      where: { id: { in: productIds }, isActive: true },
+      where: { id: { in: productIds }, isActive: true, deletedAt: null },
       select: publicSelect,
     })
 

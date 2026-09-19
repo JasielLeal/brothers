@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     const grouped = await prisma.product.groupBy({
       by: ['categoryId'],
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       _count: { _all: true },
       orderBy: { _count: { categoryId: 'desc' } },
       take: limit,
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       Promise.all(
         categoryIds.map((id) =>
           prisma.product.findFirst({
-            where: { categoryId: id, isActive: true },
+            where: { categoryId: id, isActive: true, deletedAt: null },
             orderBy: { createdAt: 'desc' },
             select: { images: true },
           })

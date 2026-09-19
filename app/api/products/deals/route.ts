@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
+        deletedAt: null,
         stock: { gt: 0 },
         originalPrice: { not: null },
       },

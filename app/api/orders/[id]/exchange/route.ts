@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!oldItem) return notFound('Item não encontrado neste pedido')
 
     const newProduct = await prisma.product.findUnique({
-      where: { id: newProductId, isActive: true },
+      where: { id: newProductId, isActive: true, deletedAt: null },
       select: { id: true, name: true, price: true, stock: true },
     })
     if (!newProduct) return badRequest('Produto não encontrado')
