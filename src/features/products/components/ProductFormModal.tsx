@@ -4,7 +4,19 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, X, Trash2, Calculator, Plus, Trash, Palette, Pencil, Upload } from 'lucide-react'
+import {
+  Loader2,
+  X,
+  Trash2,
+  Calculator,
+  Plus,
+  Trash,
+  Palette,
+  Pencil,
+  Upload,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react'
 import { uploadToCloudinary } from '@/lib/upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -379,8 +391,22 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
     }
   }
 
+  // Troca a cor com a vizinha visível anterior (-1) ou seguinte (+1)
+  function moveVariant(idx: number, dir: -1 | 1) {
+    setVariants((vs) => {
+      let target = idx + dir
+      while (target >= 0 && target < vs.length && vs[target]._deleted) target += dir
+      if (target < 0 || target >= vs.length) return vs
+      const next = [...vs]
+      ;[next[idx], next[target]] = [next[target], next[idx]]
+      return next
+    })
+  }
+
   // ── Sync variants after product save ────────────────────────────────────────
   async function syncVariants(productId: string, resolvedVariants: LocalVariant[]) {
+    const positionById = new Map<LocalVariant, number>()
+    resolvedVariants.filter((v) => !v._deleted).forEach((v, i) => positionById.set(v, i))
     const toDelete = resolvedVariants.filter((v) => v._deleted && v.id)
     const toCreate = resolvedVariants.filter((v) => !v._deleted && !v.id)
     const toUpdate = resolvedVariants.filter((v) => !v._deleted && !!v.id)
@@ -397,6 +423,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            position: positionById.get(v),
             colorName: v.colorName,
             colorHex: v.colorHex,
             images: imagesPayload(v),
@@ -409,6 +436,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            position: positionById.get(v),
             colorName: v.colorName,
             colorHex: v.colorHex,
             images: imagesPayload(v),
@@ -500,11 +528,11 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-background relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl shadow-xl">
+      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-[#141414] shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <h2 className="text-lg font-semibold">{product ? 'Editar Produto' : 'Novo Produto'}</h2>
-          <button onClick={onClose} className="hover:bg-muted rounded-md p-1">
+          <button onClick={onClose} className="rounded-md p-1 hover:bg-white/8">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -526,7 +554,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                   <textarea
                     id="description"
                     rows={5}
-                    className="placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm transition-colors focus-visible:border-[#4A6CF7] focus-visible:bg-white focus-visible:ring-1 focus-visible:outline-none"
+                    className="focus-visible:ring-ring flex w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm transition-colors placeholder:text-neutral-500 focus-visible:border-white/40 focus-visible:bg-[#141414] focus-visible:ring-1 focus-visible:outline-none"
                     {...register('description')}
                   />
                   {errors.description && (
@@ -655,10 +683,10 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
               {/* RIGHT: pricing */}
               <div className="space-y-4 p-6">
                 {/* Precificação */}
-                <div className="space-y-3 rounded-xl border border-dashed border-[#4A6CF7]/40 bg-[#4A6CF7]/3 p-4">
+                <div className="space-y-3 rounded-xl border border-dashed border-white/40 bg-white/3 p-4">
                   <div className="flex items-center gap-2">
-                    <Calculator className="h-4 w-4 text-[#4A6CF7]" />
-                    <span className="text-sm font-medium text-[#4A6CF7]">Precificação</span>
+                    <Calculator className="h-4 w-4 text-white" />
+                    <span className="text-sm font-medium text-white">Precificação</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -693,11 +721,11 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                   </div>
 
                   {hasPriceCalc && (
-                    <div className="flex items-center justify-between rounded-lg bg-[#4A6CF7]/10 px-3 py-2">
-                      <span className="text-xs text-gray-500">
+                    <div className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2">
+                      <span className="text-xs text-neutral-400">
                         R$ {cost.toFixed(2).replace('.', ',')} + {margin}% =
                       </span>
-                      <span className="text-sm font-bold text-[#4A6CF7]">
+                      <span className="text-sm font-bold text-white">
                         R$ {(cost * (1 + margin / 100)).toFixed(2).replace('.', ',')}
                       </span>
                     </div>
@@ -707,9 +735,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                     <div className="space-y-1">
                       <Label htmlFor="price">
                         Preço de venda
-                        {hasPriceCalc && (
-                          <span className="ml-1 text-[10px] text-[#4A6CF7]">auto</span>
-                        )}
+                        {hasPriceCalc && <span className="ml-1 text-[10px] text-white">auto</span>}
                       </Label>
                       <Controller
                         name="price"
@@ -746,13 +772,13 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                 </div>
 
                 {/* Estoque calculado */}
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                <div className="rounded-xl border border-white/6 bg-white/4 px-4 py-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                      <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Estoque total
                       </p>
-                      <p className="mt-0.5 text-xs text-gray-400">
+                      <p className="mt-0.5 text-xs text-neutral-500">
                         {categoryHasVariants
                           ? 'Calculado automaticamente pelas cores'
                           : 'Quantidade informada abaixo'}
@@ -762,26 +788,26 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                       {categoryHasVariants ? (
                         <>
                           <span
-                            className={`text-2xl font-bold ${liveStock === 0 ? 'text-red-400' : liveStock <= 10 ? 'text-amber-500' : 'text-green-600'}`}
+                            className={`text-2xl font-bold ${liveStock === 0 ? 'text-red-400' : liveStock <= 10 ? 'text-amber-500' : 'text-green-400'}`}
                           >
                             {liveStock}
                           </span>
-                          <p className="text-xs text-gray-400">peças</p>
+                          <p className="text-xs text-neutral-500">peças</p>
                         </>
                       ) : (
                         <>
                           <span
-                            className={`text-2xl font-bold ${flatStock === 0 ? 'text-red-400' : flatStock <= 10 ? 'text-amber-500' : 'text-green-600'}`}
+                            className={`text-2xl font-bold ${flatStock === 0 ? 'text-red-400' : flatStock <= 10 ? 'text-amber-500' : 'text-green-400'}`}
                           >
                             {flatStock}
                           </span>
-                          <p className="text-xs text-gray-400">unidades</p>
+                          <p className="text-xs text-neutral-500">unidades</p>
                         </>
                       )}
                     </div>
                   </div>
                   {categoryHasVariants && visibleVariants.length > 0 && (
-                    <div className="mt-3 space-y-1.5 border-t border-gray-200 pt-3">
+                    <div className="mt-3 space-y-1.5 border-t border-white/10 pt-3">
                       {visibleVariants.map((v, i) => {
                         const total = Object.values(v.sizes).reduce((a, b) => a + b, 0)
                         return (
@@ -790,19 +816,22 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                               className="h-3 w-3 shrink-0 rounded-full border border-white shadow-sm"
                               style={{ backgroundColor: v.colorHex }}
                             />
-                            <span className="flex-1 truncate text-xs text-gray-600">
+                            <span className="flex-1 truncate text-xs text-neutral-300">
                               {v.colorName}
                             </span>
                             <div className="flex gap-1">
                               {Object.entries(v.sizes)
                                 .filter(([, stock]) => stock > 0)
                                 .map(([s, stock]) => (
-                                  <span key={s} className="text-[10px] font-semibold text-gray-500">
+                                  <span
+                                    key={s}
+                                    className="text-[10px] font-semibold text-neutral-400"
+                                  >
                                     {s}:{stock}
                                   </span>
                                 ))}
                             </div>
-                            <span className="w-6 text-right text-xs font-bold text-gray-700">
+                            <span className="w-6 text-right text-xs font-bold text-neutral-200">
                               {total}
                             </span>
                           </div>
@@ -819,9 +848,11 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
               <div className="space-y-4 border-t px-6 py-5">
                 <div className="flex items-center gap-2">
                   <Palette className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-semibold text-gray-700">Quantidade em estoque</span>
+                  <span className="text-sm font-semibold text-neutral-200">
+                    Quantidade em estoque
+                  </span>
                 </div>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-neutral-500">
                   Esta categoria não usa cor/tamanho — informe apenas a quantidade disponível.
                 </p>
 
@@ -833,7 +864,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                     value={flatStock || ''}
                     placeholder="0"
                     onChange={(e) => setFlatStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-32 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:ring-1 focus:ring-purple-300/30 focus:outline-none"
+                    className="w-32 rounded-xl border border-white/10 bg-[#141414] px-3 py-2 text-sm font-semibold text-neutral-200 focus:border-purple-400 focus:ring-1 focus:ring-purple-300/30 focus:outline-none"
                   />
                 </div>
 
@@ -847,7 +878,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                           index={i}
                           dragIndexRef={flatDragIndex}
                           onDrop={onFlatDrop}
-                          className="group relative h-14 w-14 cursor-grab overflow-hidden rounded-lg border border-gray-200 active:cursor-grabbing"
+                          className="group relative h-14 w-14 cursor-grab overflow-hidden rounded-lg border border-white/10 active:cursor-grabbing"
                         >
                           <Image
                             src={img.preview}
@@ -879,13 +910,13 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                         e.preventDefault()
                         handleFlatFiles(e.dataTransfer.files)
                       }}
-                      className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-3 text-sm text-gray-500 transition-colors hover:border-purple-300 hover:text-purple-500"
+                      className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/10 bg-white/4 py-3 text-sm text-neutral-400 transition-colors hover:border-purple-300 hover:text-purple-500"
                     >
                       <Upload className="h-4 w-4" /> Clique ou arraste · {flatImages.length}/
                       {MAX_FLAT_IMAGES} fotos
                     </button>
                   ) : (
-                    <p className="text-center text-xs text-gray-400">
+                    <p className="text-center text-xs text-neutral-500">
                       Limite de {MAX_FLAT_IMAGES} fotos atingido · Remova uma para adicionar outra
                     </p>
                   )}
@@ -906,7 +937,9 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
               <div className="space-y-4 border-t px-6 py-5">
                 <div className="flex items-center gap-2">
                   <Palette className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-semibold text-gray-700">Cores &amp; Tamanhos</span>
+                  <span className="text-sm font-semibold text-neutral-200">
+                    Cores &amp; Tamanhos
+                  </span>
                   {visibleVariants.length > 0 && (
                     <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-600">
                       {visibleVariants.length} {visibleVariants.length === 1 ? 'cor' : 'cores'}
@@ -923,7 +956,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                       return (
                         <div
                           key={idx}
-                          className="space-y-2 rounded-xl border border-gray-100 bg-gray-50/60 p-3"
+                          className="space-y-2 rounded-xl border border-white/6 bg-white/4 p-3"
                         >
                           <div className="flex items-start gap-3">
                             {/* Swatch */}
@@ -932,7 +965,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                                 className="h-7 w-7 rounded-full border-2 border-white shadow-sm"
                                 style={{ backgroundColor: v.colorHex }}
                               />
-                              <p className="max-w-13 text-center text-[10px] leading-tight font-semibold text-gray-500">
+                              <p className="max-w-13 text-center text-[10px] leading-tight font-semibold text-neutral-400">
                                 {v.colorName}
                               </p>
                             </div>
@@ -942,7 +975,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                               {v.images.slice(0, 3).map((img, i) => (
                                 <div
                                   key={i}
-                                  className="relative h-10 w-10 overflow-hidden rounded-lg bg-gray-200"
+                                  className="relative h-10 w-10 overflow-hidden rounded-lg bg-white/10"
                                 >
                                   <Image
                                     src={img.preview}
@@ -954,7 +987,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                                 </div>
                               ))}
                               {v.images.length > 3 && (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 text-[11px] font-semibold text-gray-500">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-[11px] font-semibold text-neutral-400">
                                   +{v.images.length - 3}
                                 </div>
                               )}
@@ -962,17 +995,39 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
 
                             {/* Actions */}
                             <div className="flex shrink-0 flex-col gap-1">
+                              {visibleVariants.length > 1 && editingVariantIdx === null && (
+                                <div className="flex gap-0.5">
+                                  <button
+                                    type="button"
+                                    title="Mover para cima"
+                                    disabled={visibleVariants[0] === v}
+                                    onClick={() => moveVariant(idx, -1)}
+                                    className="rounded-lg p-1 text-neutral-500 transition-colors hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title="Mover para baixo"
+                                    disabled={visibleVariants[visibleVariants.length - 1] === v}
+                                    onClick={() => moveVariant(idx, 1)}
+                                    className="rounded-lg p-1 text-neutral-500 transition-colors hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => openEditVariant(idx)}
-                                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-[#4A6CF7]"
+                                className="rounded-lg p-1 text-neutral-500 transition-colors hover:bg-white/15 hover:text-white"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => deleteVariant(idx)}
-                                className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                                className="rounded-lg p-1 text-neutral-500 transition-colors hover:bg-red-500/15 hover:text-red-400"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -986,16 +1041,18 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                               .map(([s, stock]) => (
                                 <span
                                   key={s}
-                                  className="rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-700"
+                                  className="rounded-md border border-white/10 bg-[#141414] px-1.5 py-0.5 text-[11px] font-semibold text-neutral-200"
                                 >
                                   {s}:{stock}
                                 </span>
                               ))}
                             {total > 0 && (
-                              <p className="ml-1 text-xs font-bold text-gray-500">{total} peças</p>
+                              <p className="ml-1 text-xs font-bold text-neutral-400">
+                                {total} peças
+                              </p>
                             )}
                             {total === 0 && (
-                              <span className="text-[11px] text-gray-400">sem estoque</span>
+                              <span className="text-[11px] text-neutral-500">sem estoque</span>
                             )}
                           </div>
                         </div>
@@ -1009,7 +1066,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                   <button
                     type="button"
                     onClick={openAddVariant}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-semibold text-gray-500 transition-colors hover:border-purple-300 hover:text-purple-500"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/10 py-3 text-sm font-semibold text-neutral-400 transition-colors hover:border-purple-300 hover:text-purple-500"
                   >
                     <Plus className="h-4 w-4" />
                     {visibleVariants.length === 0
@@ -1022,13 +1079,13 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                 {editingVariantIdx !== null && (
                   <div className="space-y-4 rounded-xl border border-purple-200 bg-purple-50/40 p-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-gray-700">
+                      <p className="text-sm font-semibold text-neutral-200">
                         {variants[editingVariantIdx]?.id ? 'Editar cor' : 'Nova cor'}
                       </p>
                       <button
                         type="button"
                         onClick={cancelVariantForm}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-neutral-500 hover:text-white"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1044,7 +1101,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                             setVariantForm((f) => ({ ...f, colorName: e.target.value }))
                           }
                           placeholder="Ex: Azul Royal, Preto, Branco Gelo..."
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-purple-400 focus:ring-1 focus:ring-purple-300/30 focus:outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-[#141414] px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-500 focus:border-purple-400 focus:ring-1 focus:ring-purple-300/30 focus:outline-none"
                         />
                       </div>
                       <div className="space-y-1">
@@ -1055,7 +1112,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                           onChange={(e) =>
                             setVariantForm((f) => ({ ...f, colorHex: e.target.value }))
                           }
-                          className="h-9.5 w-14 cursor-pointer rounded-xl border border-gray-200 bg-white p-1"
+                          className="h-9.5 w-14 cursor-pointer rounded-xl border border-white/10 bg-[#141414] p-1"
                         />
                       </div>
                     </div>
@@ -1071,7 +1128,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                               index={i}
                               dragIndexRef={variantDragIndex}
                               onDrop={onVariantDrop}
-                              className="group relative h-14 w-14 cursor-grab overflow-hidden rounded-lg border border-gray-200 active:cursor-grabbing"
+                              className="group relative h-14 w-14 cursor-grab overflow-hidden rounded-lg border border-white/10 active:cursor-grabbing"
                             >
                               <Image
                                 src={img.preview}
@@ -1103,13 +1160,13 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                             e.preventDefault()
                             handleVariantFiles(e.dataTransfer.files)
                           }}
-                          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-3 text-sm text-gray-500 transition-colors hover:border-purple-300 hover:text-purple-500"
+                          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/10 bg-white/4 py-3 text-sm text-neutral-400 transition-colors hover:border-purple-300 hover:text-purple-500"
                         >
                           <Upload className="h-4 w-4" /> Clique ou arraste ·{' '}
                           {variantForm.images.length}/{MAX_VARIANT_IMAGES} fotos
                         </button>
                       ) : (
-                        <p className="text-center text-xs text-gray-400">
+                        <p className="text-center text-xs text-neutral-500">
                           Limite de {MAX_VARIANT_IMAGES} fotos atingido · Remova uma para adicionar
                           outra
                         </p>
@@ -1132,7 +1189,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                       <div className="flex flex-wrap gap-2">
                         {activeSizes.map((size) => (
                           <div key={size} className="w-16 space-y-1 text-center">
-                            <span className="block text-xs font-bold text-gray-600">
+                            <span className="block text-xs font-bold text-neutral-300">
                               {categorySizeSet === 'UNIQUE' ? 'Qtd' : size}
                             </span>
                             <input
@@ -1149,24 +1206,24 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
                                   },
                                 }))
                               }
-                              className="w-full rounded-xl border border-gray-200 bg-white px-1 py-2 text-center text-sm font-semibold text-gray-700 focus:border-purple-400 focus:ring-1 focus:ring-purple-300/30 focus:outline-none"
+                              className="w-full rounded-xl border border-white/10 bg-[#141414] px-1 py-2 text-center text-sm font-semibold text-neutral-200 focus:border-purple-400 focus:ring-1 focus:ring-purple-300/30 focus:outline-none"
                             />
                           </div>
                         ))}
                       </div>
-                      <p className="text-[11px] text-gray-400">
+                      <p className="text-[11px] text-neutral-500">
                         Total desta cor:{' '}
                         {Object.values(variantForm.sizes).reduce((a, b) => a + b, 0)} peças
                       </p>
                     </div>
 
-                    {variantError && <p className="text-xs text-red-500">{variantError}</p>}
+                    {variantError && <p className="text-xs text-red-400">{variantError}</p>}
 
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={cancelVariantForm}
-                        className="flex-1 rounded-xl border border-gray-200 py-2 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-50"
+                        className="flex-1 rounded-xl border border-white/10 py-2 text-sm font-semibold text-neutral-400 transition-colors hover:bg-white/8"
                       >
                         Cancelar
                       </button>
@@ -1186,7 +1243,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
 
           {/* Footer */}
           <div className="space-y-3 border-t px-6 py-4">
-            {syncError && <p className="text-center text-sm text-red-500">{syncError}</p>}
+            {syncError && <p className="text-center text-sm text-red-400">{syncError}</p>}
             <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar

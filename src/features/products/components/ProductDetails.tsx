@@ -503,7 +503,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Package className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
+              <Package className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
               <div>
                 <p className="text-xs font-semibold text-white">Devolução fácil</p>
                 <p className="text-[11px] text-white/40">30 dias para devolver</p>

@@ -10,9 +10,11 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
 
   return (
     <AdminThemeShell>
-      <div className="flex min-h-screen bg-gray-50 dark:bg-neutral-950">
+      <div className="flex min-h-screen gap-3 bg-[#050505] p-3 text-neutral-100">
         <AdminSidebar />
-        <main className="flex-1 overflow-auto p-4">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto rounded-3xl bg-[radial-gradient(ellipse_at_top_right,#1d1d1d_0%,#0b0b0b_55%)] p-4 ring-1 ring-white/5 md:p-6">
+          {children}
+        </main>
       </div>
     </AdminThemeShell>
   )

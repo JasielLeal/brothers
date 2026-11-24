@@ -1,25 +1,17 @@
 'use client'
 
-import { useEffect, useSyncExternalStore } from 'react'
-import { useAdminThemeStore } from '@/store/admin-theme.store'
+import { useEffect } from 'react'
+import { adminFont } from '@/lib/admin-font'
 
+// O painel admin é sempre dark. As classes vão no <body> (e não só num wrapper) para que
+// o drawer mobile da sidebar, renderizado via createPortal no body, também herde
+// os estilos dark: e a fonte do admin.
 export function AdminThemeShell({ children }: { children: React.ReactNode }) {
-  const theme = useAdminThemeStore((s) => s.theme)
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  )
-
-  // Toggle on <body> (not just a wrapper div) so the sidebar's mobile drawer —
-  // rendered via createPortal directly into document.body — also picks up dark: styles.
   useEffect(() => {
-    if (!mounted) return
-    document.body.classList.toggle('dark', theme === 'dark')
-    return () => {
-      document.body.classList.remove('dark')
-    }
-  }, [mounted, theme])
+    const classes = ['dark', ...adminFont.className.split(' ')]
+    document.body.classList.add(...classes)
+    return () => document.body.classList.remove(...classes)
+  }, [])
 
-  return <>{children}</>
+  return <div className={`dark ${adminFont.className}`}>{children}</div>
 }

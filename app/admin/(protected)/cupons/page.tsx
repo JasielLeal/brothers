@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
+import { PageHeader } from '@/components/layout/PageHeader'
 import {
   useCoupons,
   useCreateCoupon,
@@ -33,31 +33,29 @@ function ProductPicker({
 
   return (
     <div>
-      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus-within:border-[#4A6CF7] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#4A6CF7]/30 dark:border-neutral-700 dark:bg-neutral-950 dark:focus-within:bg-neutral-900">
-        <Search className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-neutral-500" />
+      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3 py-2 focus-within:border-white/40 focus-within:bg-[#141414] focus-within:ring-1 focus-within:ring-white/20">
+        <Search className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar produtos..."
-          className="w-full bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none dark:text-neutral-100 dark:placeholder:text-neutral-500"
+          className="w-full bg-transparent text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none"
         />
       </div>
 
       {selectedIds.length > 0 && (
-        <p className="mt-1.5 text-[11px] text-gray-400 dark:text-neutral-500">
+        <p className="mt-1.5 text-[11px] text-neutral-500">
           {selectedIds.length} produto(s) selecionado(s) — máx. 50
         </p>
       )}
 
-      <div className="mt-2 max-h-48 space-y-1 overflow-y-auto rounded-xl border border-gray-100 p-1.5 dark:border-neutral-800">
+      <div className="mt-2 max-h-48 space-y-1 overflow-y-auto rounded-xl border border-white/6 p-1.5">
         {isLoading ? (
           <div className="flex justify-center py-6">
-            <Loader2 className="h-4 w-4 animate-spin text-gray-300 dark:text-neutral-600" />
+            <Loader2 className="h-4 w-4 animate-spin text-neutral-600" />
           </div>
         ) : products.length === 0 ? (
-          <p className="py-6 text-center text-xs text-gray-400 dark:text-neutral-500">
-            Nenhum produto encontrado
-          </p>
+          <p className="py-6 text-center text-xs text-neutral-500">Nenhum produto encontrado</p>
         ) : (
           products.map((p) => {
             const checked = selectedIds.includes(p.id)
@@ -66,9 +64,9 @@ function ProductPicker({
                 key={p.id}
                 type="button"
                 onClick={() => toggle(p.id)}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${checked ? 'bg-[#4A6CF7]/10' : 'hover:bg-gray-50 dark:hover:bg-neutral-800'}`}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${checked ? 'bg-white/10' : 'hover:bg-white/8'}`}
               >
-                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white/6">
                   {p.images[0] ? (
                     <Image
                       src={p.images[0]}
@@ -78,19 +76,15 @@ function ProductPicker({
                       sizes="32px"
                     />
                   ) : (
-                    <Package className="m-auto h-4 w-4 text-gray-300 dark:text-neutral-600" />
+                    <Package className="m-auto h-4 w-4 text-neutral-600" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-gray-700 dark:text-neutral-200">
-                    {p.name}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-neutral-500">
-                    {formatCurrency(p.price)}
-                  </p>
+                  <p className="truncate text-xs font-medium text-neutral-200">{p.name}</p>
+                  <p className="text-[11px] text-neutral-500">{formatCurrency(p.price)}</p>
                 </div>
                 <div
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border ${checked ? 'border-[#4A6CF7] bg-[#4A6CF7]' : 'border-gray-300 dark:border-neutral-600'}`}
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border ${checked ? 'border-white/40 bg-[#141414]' : 'border-neutral-600'}`}
                 >
                   {checked && <Check className="h-3 w-3 text-white" />}
                 </div>
@@ -148,18 +142,16 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
   }
 
   const inputCls =
-    'w-full rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-950 px-3 py-2 text-sm text-gray-800 dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#4A6CF7] focus:bg-white dark:focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#4A6CF7]/30'
+    'w-full rounded-xl border border-white/10 bg-white/4 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:outline-none focus:ring-1 focus:ring-white/20'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-neutral-900">
+      <div className="w-full max-w-md rounded-2xl bg-[#141414] shadow-2xl">
         <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-neutral-100">
-            Novo Cupom
-          </h2>
+          <h2 className="text-base font-semibold text-neutral-100">Novo Cupom</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/8 hover:text-neutral-300"
           >
             <X className="h-4 w-4" />
           </button>
@@ -167,13 +159,11 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-4 p-6">
           {error && (
-            <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-500 dark:bg-red-500/10 dark:text-red-400">
-              {error}
-            </p>
+            <p className="rounded-xl bg-red-500/10 px-4 py-2.5 text-sm text-red-400">{error}</p>
           )}
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+            <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
               Código do cupom *
             </label>
             <input
@@ -183,13 +173,11 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
               className={inputCls}
               maxLength={20}
             />
-            <p className="mt-1 text-[11px] text-gray-400 dark:text-neutral-500">
-              Mínimo 3 caracteres, sem espaços
-            </p>
+            <p className="mt-1 text-[11px] text-neutral-500">Mínimo 3 caracteres, sem espaços</p>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+            <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
               Tipo de desconto *
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -198,7 +186,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
                   key={t}
                   type="button"
                   onClick={() => setType(t)}
-                  className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${type === t ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-600'}`}
+                  className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${type === t ? 'border-white/40 bg-white/10 text-white' : 'border-white/10 bg-white/4 text-neutral-400 hover:border-neutral-600'}`}
                 >
                   {t === 'PERCENTAGE' ? 'Porcentagem (%)' : 'Valor fixo (R$)'}
                 </button>
@@ -208,7 +196,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+              <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
                 {type === 'PERCENTAGE' ? 'Desconto (%) *' : 'Desconto (R$) *'}
               </label>
               <input
@@ -220,7 +208,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+              <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
                 Pedido mínimo (R$)
               </label>
               <input
@@ -235,7 +223,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+              <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
                 Limite de usos
               </label>
               <input
@@ -247,7 +235,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+              <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
                 Validade
               </label>
               <input
@@ -259,13 +247,11 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-200 p-3 dark:border-neutral-700">
+          <div className="rounded-xl border border-white/10 p-3">
             <label className="flex cursor-pointer items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-gray-700 dark:text-neutral-200">
-                  Vincular a produtos
-                </p>
-                <p className="text-[11px] text-gray-400 dark:text-neutral-500">
+                <p className="text-xs font-semibold text-neutral-200">Vincular a produtos</p>
+                <p className="text-[11px] text-neutral-500">
                   Desconto só ativa ao comprar uma quantidade mínima destes produtos
                 </p>
               </div>
@@ -279,7 +265,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
                     setMinQuantity('')
                   }
                 }}
-                className="h-4 w-4 shrink-0 accent-[#4A6CF7]"
+                className="h-4 w-4 shrink-0 accent-white"
               />
             </label>
 
@@ -287,7 +273,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
               <div className="mt-3 space-y-3">
                 <ProductPicker selectedIds={productIds} onChange={setProductIds} />
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+                  <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
                     Quantidade mínima para ativar *
                   </label>
                   <input
@@ -297,7 +283,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
                     inputMode="numeric"
                     className={inputCls}
                   />
-                  <p className="mt-1 text-[11px] text-gray-400 dark:text-neutral-500">
+                  <p className="mt-1 text-[11px] text-neutral-500">
                     O desconto incide apenas sobre o valor desses produtos no carrinho
                   </p>
                 </div>
@@ -309,14 +295,14 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
         <div className="flex justify-end gap-3 border-t px-6 py-4">
           <button
             onClick={onClose}
-            className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-neutral-300 hover:bg-white/8"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
             disabled={!canSubmit || isPending}
-            className="flex items-center gap-2 rounded-xl bg-[#4A6CF7] px-5 py-2 text-sm font-semibold text-white hover:bg-[#3a5ce5] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-white/90 disabled:opacity-50"
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Criar cupom
@@ -338,13 +324,9 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+      className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-white/8 hover:text-neutral-300"
     >
-      {copied ? (
-        <Check className="h-3.5 w-3.5 text-green-500 dark:text-green-400" />
-      ) : (
-        <Copy className="h-3.5 w-3.5" />
-      )}
+      {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   )
 }
@@ -353,19 +335,19 @@ function CopyButton({ text }: { text: string }) {
 function CouponProductsModal({ coupon, onClose }: { coupon: Coupon; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl dark:bg-neutral-900">
+      <div className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl bg-[#141414] shadow-2xl">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold text-gray-800 dark:text-neutral-100">
+            <h2 className="text-base font-semibold text-neutral-100">
               Produtos do cupom <span className="font-mono">{coupon.code}</span>
             </h2>
-            <p className="mt-0.5 text-xs text-gray-400 dark:text-neutral-500">
+            <p className="mt-0.5 text-xs text-neutral-500">
               Ativa com {coupon.minQuantity}x entre os {coupon.products.length} produto(s) abaixo
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/8 hover:text-neutral-300"
           >
             <X className="h-4 w-4" />
           </button>
@@ -375,9 +357,9 @@ function CouponProductsModal({ coupon, onClose }: { coupon: Coupon; onClose: () 
           {coupon.products.map((cp) => (
             <div
               key={cp.productId}
-              className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800"
+              className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-white/8"
             >
-              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/6">
                 {cp.product?.images[0] ? (
                   <Image
                     src={cp.product.images[0]}
@@ -387,17 +369,15 @@ function CouponProductsModal({ coupon, onClose }: { coupon: Coupon; onClose: () 
                     sizes="40px"
                   />
                 ) : (
-                  <Package className="m-auto h-4 w-4 text-gray-300 dark:text-neutral-600" />
+                  <Package className="m-auto h-4 w-4 text-neutral-600" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-700 dark:text-neutral-200">
+                <p className="truncate text-sm font-medium text-neutral-200">
                   {cp.product?.name ?? 'Produto removido'}
                 </p>
                 {cp.product && (
-                  <p className="text-xs text-gray-400 dark:text-neutral-500">
-                    {formatCurrency(cp.product.price)}
-                  </p>
+                  <p className="text-xs text-neutral-500">{formatCurrency(cp.product.price)}</p>
                 )}
               </div>
             </div>
@@ -427,68 +407,67 @@ export default function CuponsPage() {
   }
 
   function statusLabel(c: (typeof coupons)[0]) {
-    if (isExpired(c)) return { text: 'Expirado', cls: 'bg-red-50 dark:bg-red-500/10 text-red-400' }
-    if (isExhausted(c))
-      return { text: 'Esgotado', cls: 'bg-orange-50 dark:bg-orange-500/10 text-orange-400' }
+    if (isExpired(c)) return { text: 'Expirado', cls: 'bg-red-500/10 text-red-400' }
+    if (isExhausted(c)) return { text: 'Esgotado', cls: 'bg-orange-500/10 text-orange-400' }
     if (!c.isActive)
       return {
         text: 'Inativo',
-        cls: 'bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-neutral-500',
+        cls: 'bg-white/6 text-neutral-500',
       }
     return {
       text: 'Ativo',
-      cls: 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400',
+      cls: 'bg-green-500/10 text-green-400',
     }
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MobileMenuButton />
-          <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Cupons</h1>
-        </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4A6CF7] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a5ce5]"
-        >
-          <Plus className="h-4 w-4" /> Novo cupom
-        </button>
-      </div>
+      <PageHeader
+        title="Cupons"
+        subtitle="Gerencie os cupons de desconto da loja"
+        action={
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex h-11 items-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-black hover:bg-white/90"
+          >
+            <Plus className="h-4 w-4" /> Novo cupom
+          </button>
+        }
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Total', value: coupons.length, color: 'text-gray-800 dark:text-neutral-100' },
-          { label: 'Ativos', value: active.length, color: 'text-green-600 dark:text-green-400' },
+          { label: 'Total', value: coupons.length, color: 'text-neutral-100' },
+          { label: 'Ativos', value: active.length, color: 'text-green-400' },
           {
             label: 'Inativos',
             value: inactive.length,
-            color: 'text-gray-400 dark:text-neutral-500',
+            color: 'text-neutral-500',
           },
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-2xl bg-white p-4 text-center shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800"
+            className="rounded-3xl bg-[#141414] p-4 text-center ring-1 ring-white/6"
           >
-            <p className="text-xs text-gray-400 dark:text-neutral-500">{s.label}</p>
+            <p className="text-xs text-neutral-500">{s.label}</p>
             <p className={`mt-1 text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <div className="rounded-3xl bg-[#141414] ring-1 ring-white/6">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-300 dark:text-neutral-600" />
+            <Loader2 className="h-6 w-6 animate-spin text-neutral-600" />
           </div>
         ) : coupons.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 dark:bg-neutral-800">
-              <Tag className="h-5 w-5 text-gray-300 dark:text-neutral-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/6">
+              <Tag className="h-5 w-5 text-neutral-600" />
             </div>
-            <p className="text-sm text-gray-400 dark:text-neutral-500">Nenhum cupom criado ainda</p>
+            <p className="text-sm text-neutral-500">Nenhum cupom criado ainda</p>
           </div>
         ) : (
           <>
@@ -496,7 +475,7 @@ export default function CuponsPage() {
             <div className="hidden lg:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 text-left text-xs text-gray-400 dark:border-neutral-800 dark:text-neutral-500">
+                  <tr className="border-b border-white/6 text-left text-xs text-neutral-500">
                     <th className="px-5 py-3.5 font-semibold">Código</th>
                     <th className="px-5 py-3.5 font-semibold">Desconto</th>
                     <th className="px-5 py-3.5 font-semibold">Regra</th>
@@ -506,27 +485,27 @@ export default function CuponsPage() {
                     <th className="px-5 py-3.5" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-neutral-800">
+                <tbody className="divide-y divide-white/6">
                   {coupons.map((c) => {
                     const status = statusLabel(c)
                     return (
-                      <tr key={c.id} className="hover:bg-gray-50/50 dark:hover:bg-neutral-800/50">
+                      <tr key={c.id} className="hover:bg-neutral-800/50">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-sm font-bold tracking-wider text-gray-800 dark:text-neutral-100">
+                            <span className="font-mono text-sm font-bold tracking-wider text-neutral-100">
                               {c.code}
                             </span>
                             <CopyButton text={c.code} />
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 font-semibold text-[#4A6CF7]">
+                        <td className="px-5 py-3.5 font-semibold text-white">
                           {c.type === 'PERCENTAGE' ? `${c.value}%` : formatCurrency(c.value)}
                         </td>
-                        <td className="px-5 py-3.5 text-gray-500 dark:text-neutral-400">
+                        <td className="px-5 py-3.5 text-neutral-400">
                           {c.products.length > 0 ? (
                             <button
                               onClick={() => setViewingProducts(c)}
-                              className="flex items-center gap-1 text-xs text-[#4A6CF7] hover:underline"
+                              className="flex items-center gap-1 text-xs text-white hover:underline"
                             >
                               <Package className="h-3.5 w-3.5" />
                               {c.minQuantity}x de {c.products.length} produto(s)
@@ -537,11 +516,11 @@ export default function CuponsPage() {
                             '—'
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-gray-500 dark:text-neutral-400">
+                        <td className="px-5 py-3.5 text-neutral-400">
                           {c.usedCount}
                           {c.maxUses ? `/${c.maxUses}` : ''}
                         </td>
-                        <td className="px-5 py-3.5 text-gray-500 dark:text-neutral-400">
+                        <td className="px-5 py-3.5 text-neutral-400">
                           {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('pt-BR') : '—'}
                         </td>
                         <td className="px-5 py-3.5">
@@ -555,14 +534,14 @@ export default function CuponsPage() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => toggle({ id: c.id, isActive: !c.isActive })}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${c.isActive ? 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700' : 'bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-500/10 dark:text-green-400 dark:hover:bg-green-500/20'}`}
+                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${c.isActive ? 'bg-white/6 text-neutral-400 hover:bg-white/10' : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'}`}
                             >
                               {c.isActive ? 'Desativar' : 'Ativar'}
                             </button>
                             <button
                               onClick={() => remove(c.id)}
                               disabled={deleting}
-                              className="rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-400 dark:text-neutral-600 dark:hover:bg-red-500/15"
+                              className="rounded-lg p-1.5 text-neutral-600 transition-colors hover:bg-red-500/15 hover:text-red-400"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -576,14 +555,14 @@ export default function CuponsPage() {
             </div>
 
             {/* Mobile */}
-            <div className="divide-y divide-gray-50 lg:hidden dark:divide-neutral-800">
+            <div className="divide-y divide-white/6 lg:hidden">
               {coupons.map((c) => {
                 const status = statusLabel(c)
                 return (
                   <div key={c.id} className="space-y-2 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold tracking-wider text-gray-800 dark:text-neutral-100">
+                        <span className="font-mono font-bold tracking-wider text-neutral-100">
                           {c.code}
                         </span>
                         <CopyButton text={c.code} />
@@ -594,8 +573,8 @@ export default function CuponsPage() {
                         {status.text}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-neutral-400">
-                      <span className="font-semibold text-[#4A6CF7]">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-400">
+                      <span className="font-semibold text-white">
                         {c.type === 'PERCENTAGE'
                           ? `${c.value}% off`
                           : `${formatCurrency(c.value)} off`}
@@ -603,7 +582,7 @@ export default function CuponsPage() {
                       {c.products.length > 0 ? (
                         <button
                           onClick={() => setViewingProducts(c)}
-                          className="font-semibold text-[#4A6CF7] hover:underline"
+                          className="font-semibold text-white hover:underline"
                         >
                           {c.minQuantity}x de {c.products.length} produto(s)
                         </button>
@@ -621,14 +600,14 @@ export default function CuponsPage() {
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={() => toggle({ id: c.id, isActive: !c.isActive })}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${c.isActive ? 'bg-gray-100 text-gray-500 dark:bg-neutral-800 dark:text-neutral-400' : 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400'}`}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${c.isActive ? 'bg-white/6 text-neutral-400' : 'bg-green-500/10 text-green-400'}`}
                       >
                         {c.isActive ? 'Desativar' : 'Ativar'}
                       </button>
                       <button
                         onClick={() => remove(c.id)}
                         disabled={deleting}
-                        className="rounded-lg p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-400 dark:text-neutral-600 dark:hover:bg-red-500/15"
+                        className="rounded-lg p-1.5 text-neutral-600 hover:bg-red-500/15 hover:text-red-400"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

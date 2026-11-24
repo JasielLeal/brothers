@@ -15,6 +15,7 @@ const createSchema = z.object({
   colorHex: z.string().optional().nullable(),
   images: z.array(z.string().min(1)).min(1, 'Adicione pelo menos uma imagem'),
   sizes: z.array(sizeStockSchema),
+  position: z.number().int().min(0).optional(),
 })
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const variants = await prisma.productVariant.findMany({
       where: { productId: id },
       include: { sizes: { orderBy: { size: 'asc' } } },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
     })
     return ok(variants)
   } catch (e) {
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const parsed = createSchema.safeParse(body)
     if (!parsed.success) return badRequest(parsed.error.issues[0].message)
 
-    const { colorName, colorHex, images, sizes } = parsed.data
+    const { colorName, colorHex, images, sizes, position } = parsed.data
 
     const barcode = await nextBarcode()
 
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         colorHex: colorHex ?? null,
         images,
         barcode,
+        position: position ?? 0,
         sizes: {
           create: sizes.filter((s) => s.stock > 0).map((s) => ({ size: s.size, stock: s.stock })),
         },

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
+import { PageHeader } from '@/components/layout/PageHeader'
 import {
   Plus,
   Search,
@@ -32,26 +32,26 @@ const STATUS_META: Record<
 > = {
   PENDING: {
     label: 'Pendente',
-    bg: 'bg-yellow-50 dark:bg-yellow-500/10',
-    text: 'text-yellow-700 dark:text-yellow-400',
+    bg: 'bg-yellow-500/10',
+    text: 'text-yellow-400',
     Icon: Clock,
   },
   PAID: {
     label: 'Pago',
-    bg: 'bg-green-50 dark:bg-green-500/10',
-    text: 'text-green-700 dark:text-green-400',
+    bg: 'bg-green-500/10',
+    text: 'text-green-400',
     Icon: CheckCircle2,
   },
   OVERDUE: {
     label: 'Vencido',
-    bg: 'bg-red-50 dark:bg-red-500/10',
-    text: 'text-red-700 dark:text-red-400',
+    bg: 'bg-red-500/10',
+    text: 'text-red-400',
     Icon: AlertCircle,
   },
   CANCELLED: {
     label: 'Cancelado',
-    bg: 'bg-gray-100 dark:bg-neutral-800',
-    text: 'text-gray-500 dark:text-neutral-400',
+    bg: 'bg-white/6',
+    text: 'text-neutral-400',
     Icon: XCircle,
   },
 }
@@ -130,9 +130,9 @@ function StatsCarousel({
         >
           {items.map((s, i) => (
             <div key={i} className="w-full shrink-0">
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-                <p className="text-xs text-gray-400 dark:text-neutral-500">{s.label}</p>
-                <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
+              <div className="rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+                <p className="text-xs text-neutral-500">{s.label}</p>
+                <p className="mt-1 text-2xl font-bold text-white">{s.value}</p>
                 <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: s.accent }} />
               </div>
             </div>
@@ -147,7 +147,7 @@ function StatsCarousel({
               setTransitioning(true)
               setIdx(i + 1)
             }}
-            className={`h-1.5 rounded-full transition-all ${i === realIdx ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
+            className={`h-1.5 rounded-full transition-all ${i === realIdx ? 'w-4 bg-[#141414]' : 'w-1.5 bg-white/10'}`}
           />
         ))}
       </div>
@@ -245,30 +245,27 @@ export default function AdminInvoicesPage() {
   return (
     <div className="space-y-5">
       {/* ── header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MobileMenuButton />
-          <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Boletos</h1>
-        </div>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4A6CF7] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5]"
-        >
-          <Plus className="h-4 w-4" />
-          Novo boleto
-        </button>
-      </div>
+      <PageHeader
+        title="Boletos"
+        subtitle="Controle os boletos a pagar e a receber"
+        action={
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex h-11 items-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-black hover:bg-white/90"
+          >
+            <Plus className="h-4 w-4" />
+            Novo boleto
+          </button>
+        }
+      />
 
       {/* ── stats ──────────────────────────────────────────────────────────── */}
       <StatsCarousel stats={stats} />
       <div className="hidden grid-cols-4 gap-4 lg:grid">
         {stats.map((s) => (
-          <div
-            key={s.label}
-            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800"
-          >
-            <p className="text-xs text-gray-400 dark:text-neutral-500">{s.label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
+          <div key={s.label} className="rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+            <p className="text-xs text-neutral-500">{s.label}</p>
+            <p className="mt-1 text-2xl font-bold text-white">{s.value}</p>
             <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: s.accent }} />
           </div>
         ))}
@@ -276,53 +273,53 @@ export default function AdminInvoicesPage() {
 
       {/* ── filter tabs + search ─────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="grid w-full grid-cols-3 gap-2 rounded-xl bg-white p-1 shadow-sm ring-1 ring-gray-100 sm:flex sm:w-auto sm:gap-1 dark:bg-neutral-900 dark:ring-neutral-800">
+        <div className="grid w-full grid-cols-3 gap-2 rounded-xl bg-[#141414] p-1 ring-1 ring-white/6 sm:flex sm:w-auto sm:gap-1">
           {FILTER_TABS.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => handleTab(key)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tab === key ? 'bg-[#4A6CF7] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tab === key ? 'bg-white text-black shadow-sm' : 'text-neutral-400 hover:bg-white/8 hover:text-neutral-200'}`}
             >
               {label}
             </button>
           ))}
         </div>
         <div className="relative min-w-52">
-          <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-neutral-500" />
+          <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-neutral-500" />
           <input
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Buscar fornecedor ou descrição..."
-            className="w-full rounded-xl border-0 bg-white py-2.5 pr-4 pl-9 text-sm text-gray-700 shadow-sm ring-1 ring-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/30 focus:outline-none dark:bg-neutral-900 dark:text-neutral-200 dark:ring-neutral-800 dark:placeholder:text-neutral-500"
+            className="w-full rounded-xl border-0 bg-[#141414] py-2.5 pr-4 pl-9 text-sm text-neutral-200 ring-1 ring-white/6 placeholder:text-neutral-500 focus:ring-2 focus:ring-white/20 focus:outline-none"
           />
         </div>
       </div>
 
       {/* ── table ──────────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+      <div className="rounded-3xl bg-[#141414] ring-1 ring-white/6">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-300 dark:text-neutral-600" />
+            <Loader2 className="h-6 w-6 animate-spin text-neutral-600" />
           </div>
         ) : boletos.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-400 dark:text-neutral-500">
+          <div className="py-16 text-center text-sm text-neutral-500">
             Nenhum boleto encontrado.
           </div>
         ) : (
           <>
             {/* mobile card list */}
-            <div className="divide-y divide-gray-50 lg:hidden dark:divide-neutral-800">
+            <div className="divide-y divide-white/6 lg:hidden">
               {boletos.map((b) => {
                 const meta = STATUS_META[b.status]
                 const StatusIcon = meta.Icon
                 return (
                   <div key={b.id} className="flex items-start gap-3 px-4 py-3.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#4A6CF7]/8">
-                      <FileText className="h-4 w-4 text-[#4A6CF7]" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/8">
+                      <FileText className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="truncate text-sm font-semibold text-gray-800 dark:text-neutral-100">
+                        <p className="truncate text-sm font-semibold text-neutral-100">
                           {b.supplierName}
                         </p>
                         <span
@@ -332,28 +329,26 @@ export default function AdminInvoicesPage() {
                           {meta.label}
                         </span>
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-neutral-400">
-                        {b.description}
-                      </p>
+                      <p className="mt-0.5 truncate text-xs text-neutral-400">{b.description}</p>
                       <div className="mt-1.5 flex items-center justify-between gap-2">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                        <span className="text-sm font-bold text-white">
                           {formatCurrency(b.amount)}
                         </span>
-                        <span className="text-xs text-gray-400 dark:text-neutral-500">
+                        <span className="text-xs text-neutral-500">
                           Vence {formatDate(b.dueDate)}
                         </span>
                       </div>
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-1">
-                          <span className="truncate font-mono text-[11px] text-gray-400 dark:text-neutral-500">
+                          <span className="truncate font-mono text-[11px] text-neutral-500">
                             {b.code.slice(0, 24)}…
                           </span>
                           <button
                             onClick={() => handleCopy(b.code)}
-                            className="shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+                            className="shrink-0 rounded p-0.5 text-neutral-500 hover:text-neutral-300"
                           >
                             {copied === b.code ? (
-                              <Check className="h-3 w-3 text-green-500 dark:text-green-400" />
+                              <Check className="h-3 w-3 text-green-400" />
                             ) : (
                               <Copy className="h-3 w-3" />
                             )}
@@ -361,7 +356,7 @@ export default function AdminInvoicesPage() {
                         </div>
                         <button
                           onClick={() => setDetail(b)}
-                          className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#4A6CF7] hover:bg-[#4A6CF7]/8"
+                          className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold text-white hover:bg-white/8"
                         >
                           Detalhes
                         </button>
@@ -376,12 +371,12 @@ export default function AdminInvoicesPage() {
             <div className="hidden overflow-x-auto lg:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-50 dark:border-neutral-800">
+                  <tr className="border-b border-white/6">
                     {['Fornecedor', 'Descrição', 'Valor', 'Vencimento', 'Status', 'Código', ''].map(
                       (h) => (
                         <th
                           key={h}
-                          className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500"
+                          className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-neutral-500 uppercase"
                         >
                           {h}
                         </th>
@@ -389,32 +384,29 @@ export default function AdminInvoicesPage() {
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-neutral-800">
+                <tbody className="divide-y divide-white/6">
                   {boletos.map((b) => {
                     const meta = STATUS_META[b.status]
                     const StatusIcon = meta.Icon
                     return (
-                      <tr
-                        key={b.id}
-                        className="transition-colors hover:bg-gray-50/60 dark:hover:bg-neutral-800/60"
-                      >
+                      <tr key={b.id} className="transition-colors hover:bg-neutral-800/60">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#4A6CF7]/8">
-                              <FileText className="h-4 w-4 text-[#4A6CF7]" />
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/8">
+                              <FileText className="h-4 w-4 text-white" />
                             </div>
-                            <span className="max-w-40 truncate font-medium text-gray-800 dark:text-neutral-100">
+                            <span className="max-w-40 truncate font-medium text-neutral-100">
                               {b.supplierName}
                             </span>
                           </div>
                         </td>
-                        <td className="max-w-52 truncate px-5 py-3.5 text-gray-600 dark:text-neutral-300">
+                        <td className="max-w-52 truncate px-5 py-3.5 text-neutral-300">
                           {b.description}
                         </td>
-                        <td className="px-5 py-3.5 font-semibold whitespace-nowrap text-gray-800 dark:text-neutral-100">
+                        <td className="px-5 py-3.5 font-semibold whitespace-nowrap text-neutral-100">
                           {formatCurrency(b.amount)}
                         </td>
-                        <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 dark:text-neutral-300">
+                        <td className="px-5 py-3.5 whitespace-nowrap text-neutral-300">
                           {formatDate(b.dueDate)}
                         </td>
                         <td className="px-5 py-3.5">
@@ -427,16 +419,16 @@ export default function AdminInvoicesPage() {
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="max-w-32 truncate font-mono text-xs text-gray-400 dark:text-neutral-500">
+                            <span className="max-w-32 truncate font-mono text-xs text-neutral-500">
                               {b.code}
                             </span>
                             <button
                               onClick={() => handleCopy(b.code)}
-                              className="shrink-0 rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                              className="shrink-0 rounded-lg p-1 text-neutral-500 transition-colors hover:bg-white/8 hover:text-neutral-300"
                               title="Copiar código"
                             >
                               {copied === b.code ? (
-                                <Check className="h-3.5 w-3.5 text-green-500 dark:text-green-400" />
+                                <Check className="h-3.5 w-3.5 text-green-400" />
                               ) : (
                                 <Copy className="h-3.5 w-3.5" />
                               )}
@@ -446,7 +438,7 @@ export default function AdminInvoicesPage() {
                         <td className="px-5 py-3.5">
                           <button
                             onClick={() => setDetail(b)}
-                            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[#4A6CF7] transition-colors hover:bg-[#4A6CF7]/8"
+                            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/8"
                           >
                             Detalhes
                           </button>
@@ -464,19 +456,18 @@ export default function AdminInvoicesPage() {
       {/* ── pagination ─────────────────────────────────────────────────────── */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400 dark:text-neutral-500">
+          <p className="text-xs text-neutral-500">
             Exibindo{' '}
-            <span className="font-semibold text-gray-700 dark:text-neutral-200">
+            <span className="font-semibold text-neutral-200">
               {(page - 1) * 5 + 1}–{Math.min(page * 5, total)}
             </span>{' '}
-            de <span className="font-semibold text-gray-700 dark:text-neutral-200">{total}</span>{' '}
-            boletos
+            de <span className="font-semibold text-neutral-200">{total}</span> boletos
           </p>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white hover:shadow-sm disabled:opacity-30 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/8 hover:shadow-sm disabled:opacity-30"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -484,7 +475,7 @@ export default function AdminInvoicesPage() {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${p === page ? 'bg-[#4A6CF7] text-white shadow-sm' : 'text-gray-500 hover:bg-white hover:shadow-sm dark:text-neutral-400 dark:hover:bg-neutral-800'}`}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${p === page ? 'bg-white text-black shadow-sm' : 'text-neutral-400 hover:bg-white/8 hover:shadow-sm'}`}
               >
                 {p}
               </button>
@@ -492,7 +483,7 @@ export default function AdminInvoicesPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white hover:shadow-sm disabled:opacity-30 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/8 hover:shadow-sm disabled:opacity-30"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -511,14 +502,12 @@ export default function AdminInvoicesPage() {
                 className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
                 onClick={() => setDetail(null)}
               />
-              <div className="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-2xl dark:bg-neutral-900">
-                <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-neutral-800">
-                  <h2 className="text-base font-bold text-gray-800 dark:text-neutral-100">
-                    Detalhes do Boleto
-                  </h2>
+              <div className="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#141414] shadow-2xl">
+                <div className="flex items-center justify-between border-b border-white/6 px-6 py-4">
+                  <h2 className="text-base font-bold text-neutral-100">Detalhes do Boleto</h2>
                   <button
                     onClick={() => setDetail(null)}
-                    className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                    className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-white/8 hover:text-neutral-300"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -532,49 +521,45 @@ export default function AdminInvoicesPage() {
                   </span>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-400 dark:text-neutral-500">Fornecedor</p>
-                      <p className="mt-0.5 text-sm font-semibold text-gray-800 dark:text-neutral-100">
+                      <p className="text-xs text-neutral-500">Fornecedor</p>
+                      <p className="mt-0.5 text-sm font-semibold text-neutral-100">
                         {detail.supplierName}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 dark:text-neutral-500">Valor</p>
-                      <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-white">
+                      <p className="text-xs text-neutral-500">Valor</p>
+                      <p className="mt-0.5 text-xl font-bold text-white">
                         {formatCurrency(detail.amount)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 dark:text-neutral-500">Vencimento</p>
-                      <p className="mt-0.5 text-sm text-gray-700 dark:text-neutral-200">
+                      <p className="text-xs text-neutral-500">Vencimento</p>
+                      <p className="mt-0.5 text-sm text-neutral-200">
                         {formatDate(detail.dueDate)}
                       </p>
                     </div>
                     {detail.paidAt && (
                       <div>
-                        <p className="text-xs text-gray-400 dark:text-neutral-500">Pago em</p>
-                        <p className="mt-0.5 text-sm text-gray-700 dark:text-neutral-200">
+                        <p className="text-xs text-neutral-500">Pago em</p>
+                        <p className="mt-0.5 text-sm text-neutral-200">
                           {formatDate(detail.paidAt)}
                         </p>
                       </div>
                     )}
                     <div className="col-span-2">
-                      <p className="text-xs text-gray-400 dark:text-neutral-500">Descrição</p>
-                      <p className="mt-0.5 text-sm text-gray-700 dark:text-neutral-200">
-                        {detail.description}
-                      </p>
+                      <p className="text-xs text-neutral-500">Descrição</p>
+                      <p className="mt-0.5 text-sm text-neutral-200">{detail.description}</p>
                     </div>
                   </div>
-                  <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-100 dark:bg-neutral-950 dark:ring-neutral-800">
+                  <div className="rounded-xl bg-white/4 p-4 ring-1 ring-white/6">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="font-mono text-xs break-all text-gray-600 dark:text-neutral-300">
-                        {detail.code}
-                      </p>
+                      <p className="font-mono text-xs break-all text-neutral-300">{detail.code}</p>
                       <button
                         onClick={() => handleCopy(detail.code)}
-                        className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:shadow-sm dark:text-neutral-500 dark:hover:bg-neutral-800"
+                        className="shrink-0 rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-white/8 hover:shadow-sm"
                       >
                         {copied === detail.code ? (
-                          <Check className="h-4 w-4 text-green-500 dark:text-green-400" />
+                          <Check className="h-4 w-4 text-green-400" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -583,11 +568,11 @@ export default function AdminInvoicesPage() {
                   </div>
                 </div>
                 {(detail.status === 'PENDING' || detail.status === 'OVERDUE') && (
-                  <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4 dark:border-neutral-800">
+                  <div className="flex items-center justify-end gap-3 border-t border-white/6 px-6 py-4">
                     <button
                       onClick={() => cancelBoleto(detail.id)}
                       disabled={updateStatus.isPending}
-                      className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                      className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-neutral-300 transition-colors hover:bg-white/8 disabled:opacity-40"
                     >
                       Cancelar boleto
                     </button>
@@ -617,44 +602,42 @@ export default function AdminInvoicesPage() {
             className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
             onClick={() => setDrawerOpen(false)}
           />
-          <div className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl dark:bg-neutral-900">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-neutral-800">
-              <h2 className="text-base font-bold text-gray-800 dark:text-neutral-100">
-                Novo Boleto
-              </h2>
+          <div className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col bg-[#141414] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/6 px-6 py-4">
+              <h2 className="text-base font-bold text-neutral-100">Novo Boleto</h2>
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-white/8 hover:text-neutral-300"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
               <label className="block">
-                <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-neutral-400">
+                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                   Fornecedor *
                 </span>
                 <input
                   value={form.supplierName}
                   onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))}
                   placeholder="Nome do fornecedor"
-                  className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200 dark:ring-neutral-700 dark:placeholder:text-neutral-500"
+                  className="mt-1.5 w-full rounded-xl border-0 bg-white/4 px-4 py-2.5 text-sm text-neutral-200 ring-1 ring-white/10 placeholder:text-neutral-500 focus:ring-2 focus:ring-white/20 focus:outline-none"
                 />
               </label>
               <label className="block">
-                <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-neutral-400">
+                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                   Descrição
                 </span>
                 <input
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Ex: Pedido #1234 — camisetas"
-                  className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200 dark:ring-neutral-700 dark:placeholder:text-neutral-500"
+                  className="mt-1.5 w-full rounded-xl border-0 bg-white/4 px-4 py-2.5 text-sm text-neutral-200 ring-1 ring-white/10 placeholder:text-neutral-500 focus:ring-2 focus:ring-white/20 focus:outline-none"
                 />
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-neutral-400">
+                  <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                     Valor (R$) *
                   </span>
                   <input
@@ -664,26 +647,26 @@ export default function AdminInvoicesPage() {
                     value={form.amount}
                     onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
                     placeholder="0,00"
-                    className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200 dark:ring-neutral-700 dark:placeholder:text-neutral-500"
+                    className="mt-1.5 w-full rounded-xl border-0 bg-white/4 px-4 py-2.5 text-sm text-neutral-200 ring-1 ring-white/10 placeholder:text-neutral-500 focus:ring-2 focus:ring-white/20 focus:outline-none"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-neutral-400">
+                  <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                     Vencimento *
                   </span>
                   <input
                     type="date"
                     value={form.dueDate}
                     onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                    className="mt-1.5 w-full rounded-xl border-0 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 ring-1 ring-gray-200 focus:ring-2 focus:ring-[#4A6CF7]/40 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200 dark:ring-neutral-700"
+                    className="mt-1.5 w-full rounded-xl border-0 bg-white/4 px-4 py-2.5 text-sm text-neutral-200 ring-1 ring-white/10 focus:ring-2 focus:ring-white/20 focus:outline-none"
                   />
                 </label>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4 dark:border-neutral-800">
+            <div className="flex items-center justify-end gap-3 border-t border-white/6 px-6 py-4">
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-neutral-300 transition-colors hover:bg-white/8"
               >
                 Cancelar
               </button>
@@ -695,7 +678,7 @@ export default function AdminInvoicesPage() {
                   !form.dueDate ||
                   createBoleto.isPending
                 }
-                className="flex items-center gap-1.5 rounded-xl bg-[#4A6CF7] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-40"
               >
                 {createBoleto.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Gerar boleto

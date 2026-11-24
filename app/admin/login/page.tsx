@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
       {/* ── Left panel ─────────────────────────────────────────────────────── */}
       <div className="relative hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-1/2">
         {/* gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a4d7a] via-[#14649e] to-[#4A6CF7]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0a0a0a] to-[#141414]" />
 
         {/* decorative blobs */}
         <div className="absolute top-[-80px] right-[-80px] h-72 w-72 rounded-full bg-white/5 blur-3xl" />

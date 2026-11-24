@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { useOrders } from '@/features/orders/hooks/useOrders'
 import { useProducts } from '@/features/products/hooks/useProducts'
 import { formatCurrency } from '@/utils/formatCurrency'
@@ -59,14 +59,14 @@ function MonthlyBarChart({
         const prevH = (prev[i] / maxVal) * H
         return (
           <g key={i}>
-            <rect x={x} y={H - prevH} width={barW} height={prevH} rx="3" fill="#E2E8F0" />
+            <rect x={x} y={H - prevH} width={barW} height={prevH} rx="3" fill="#3F3F3F" />
             <rect
               x={x + barW + gap}
               y={H - curH}
               width={barW}
               height={curH}
               rx="3"
-              fill={selectedMonth === i ? '#2E4FD4' : '#4A6CF7'}
+              fill={selectedMonth === i ? '#FFFFFF' : '#F5F5F5'}
             />
             <text
               x={x + barW + gap / 2}
@@ -107,14 +107,14 @@ function WeekdayBarChart({
         const prevH = (prev[i] / maxVal) * H
         return (
           <g key={i}>
-            <rect x={x} y={H - prevH} width={barW} height={prevH} rx="3" fill="#E2E8F0" />
+            <rect x={x} y={H - prevH} width={barW} height={prevH} rx="3" fill="#3F3F3F" />
             <rect
               x={x + barW + gap}
               y={H - curH}
               width={barW}
               height={curH}
               rx="3"
-              fill="#4A6CF7"
+              fill="#F5F5F5"
             />
             <text x={x + barW + gap / 2} y={H + 13} textAnchor="middle" fontSize="8" fill="#94A3B8">
               {labels[i]}
@@ -145,7 +145,7 @@ function HourDonut({ segments }: { segments: DonutSeg[] }) {
   return (
     <div className="relative flex justify-center">
       <svg width="130" height="130" viewBox="0 0 130 130">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#EEF0FF" strokeWidth="22" />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#262626" strokeWidth="22" />
         {arcs.map((seg, i) => (
           <path
             key={i}
@@ -159,13 +159,13 @@ function HourDonut({ segments }: { segments: DonutSeg[] }) {
         <circle cx={cx} cy={cy} r={30} fill="white" />
       </svg>
       {biggest && biggest.count > 0 && (
-        <div className="pointer-events-none absolute -top-2 left-[54%] rounded-xl bg-gray-800 px-3 py-2 text-white shadow-xl">
+        <div className="pointer-events-none absolute -top-2 left-[54%] rounded-xl bg-black px-3 py-2 text-white shadow-xl ring-1 ring-white/20">
           <p className="text-[10px] font-semibold opacity-80">{biggest.label}</p>
           <p className="text-[10px] opacity-60">{biggest.sublabel}</p>
           <p className="text-sm font-bold">
             {biggest.count} pedido{biggest.count !== 1 ? 's' : ''}
           </p>
-          <div className="absolute top-3.5 -left-1.5 h-3 w-3 rotate-45 bg-gray-800" />
+          <div className="absolute top-3.5 -left-1.5 h-3 w-3 rotate-45 bg-black ring-1 ring-white/20" />
         </div>
       )}
     </div>
@@ -177,12 +177,12 @@ function Trend({ up, value, label }: { up: boolean; value: string; label: string
   return (
     <div className="mt-1.5 flex items-center gap-2">
       <span
-        className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${up ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}
+        className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${up ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}
       >
         {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
         {value}
       </span>
-      <span className="text-xs text-gray-400 dark:text-neutral-500">{label}</span>
+      <span className="text-xs text-neutral-500">{label}</span>
     </div>
   )
 }
@@ -245,13 +245,13 @@ function KpiCarousel({ kpis }: { kpis: KpiItem[] }) {
       >
         {extended.map((k, i) => (
           <div key={i} className="w-full shrink-0 px-0.5">
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-              <p className="text-xs text-gray-400 dark:text-neutral-500">{k.label}</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{k.value}</p>
+            <div className="rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+              <p className="text-xs text-neutral-500">{k.label}</p>
+              <p className="mt-1 text-2xl font-bold text-white">{k.value}</p>
               {k.trend ? (
                 <Trend up={k.up} value={k.trend} label={k.sub} />
               ) : (
-                <p className="mt-1.5 text-xs text-gray-300 dark:text-neutral-600">—</p>
+                <p className="mt-1.5 text-xs text-neutral-600">—</p>
               )}
               <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: k.accent }} />
             </div>
@@ -266,7 +266,7 @@ function KpiCarousel({ kpis }: { kpis: KpiItem[] }) {
               setAnimated(true)
               setIdx(i + 1)
             }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#141414]' : 'w-1.5 bg-white/10'}`}
           />
         ))}
       </div>
@@ -335,7 +335,7 @@ function SlideCarousel({ children }: { children: React.ReactNode[] }) {
               setAnimated(true)
               setIdx(i + 1)
             }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#141414]' : 'w-1.5 bg-white/10'}`}
           />
         ))}
       </div>
@@ -430,28 +430,28 @@ export default function AnalyticsPage() {
         sublabel: '12h–18h',
         count: buckets.tarde,
         pct: Math.round((buckets.tarde / total) * 100),
-        color: '#4A6CF7',
+        color: '#F5F5F5',
       },
       {
         label: 'Noite',
         sublabel: '18h–00h',
         count: buckets.noite,
         pct: Math.round((buckets.noite / total) * 100),
-        color: '#8AA4F9',
+        color: '#A3A3A3',
       },
       {
         label: 'Manhã',
         sublabel: '06h–12h',
         count: buckets.manha,
         pct: Math.round((buckets.manha / total) * 100),
-        color: '#D0DAFE',
+        color: '#525252',
       },
       {
         label: 'Madrugada',
         sublabel: '00h–06h',
         count: buckets.madrugada,
         pct: Math.round((buckets.madrugada / total) * 100),
-        color: '#EEF0FF',
+        color: '#262626',
       },
     ]
   }, [confirmedOrders])
@@ -510,10 +510,10 @@ export default function AnalyticsPage() {
       CASH: 'Dinheiro',
     }
     const colors: Record<string, string> = {
-      PIX: '#4A6CF7',
+      PIX: '#F5F5F5',
       CREDIT_CARD: '#22C55E',
       DEBIT_CARD: '#F5A623',
-      CASH: '#8AA4F9',
+      CASH: '#A3A3A3',
     }
     return Object.entries(map)
       .map(([key, count]) => ({
@@ -533,7 +533,7 @@ export default function AnalyticsPage() {
       trend: kpiTrends.rev,
       up: kpiTrends.revUp,
       sub: 'vs mês anterior',
-      accent: '#4A6CF7',
+      accent: '#F5F5F5',
     },
     {
       label: 'Pedidos Confirmados',
@@ -565,30 +565,27 @@ export default function AnalyticsPage() {
 
   /* ── sub-cards ── */
   const weekdayCard = (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Pedidos por Dia</h2>
-      <p className="mt-0.5 mb-4 text-xs text-gray-400 dark:text-neutral-500">
-        Últimos 7 dias vs semana anterior
-      </p>
+    <div className="rounded-3xl bg-[#141414] p-6 ring-1 ring-white/6">
+      <h2 className="text-sm font-semibold text-neutral-300">Pedidos por Dia</h2>
+      <p className="mt-0.5 mb-4 text-xs text-neutral-500">Últimos 7 dias vs semana anterior</p>
       <WeekdayBarChart data={weekCur} prev={weekPrev} labels={weekLabels} />
       <div className="mt-3 flex items-center gap-5">
-        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" /> Esta semana
+        <span className="flex items-center gap-1.5 text-xs text-neutral-400">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#141414]" /> Esta semana
         </span>
-        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-          <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" /> Semana
-          passada
+        <span className="flex items-center gap-1.5 text-xs text-neutral-400">
+          <span className="h-2.5 w-2.5 rounded-full bg-white/10" /> Semana passada
         </span>
       </div>
     </div>
   )
 
   const topProductsCard = (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Top Produtos</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">Por receita gerada</p>
+    <div className="rounded-3xl bg-[#141414] p-6 ring-1 ring-white/6">
+      <h2 className="text-sm font-semibold text-neutral-300">Top Produtos</h2>
+      <p className="mt-0.5 mb-5 text-xs text-neutral-500">Por receita gerada</p>
       {topProductsRev.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+        <div className="flex h-32 items-center justify-center text-sm text-neutral-600">
           Sem vendas ainda
         </div>
       ) : (
@@ -597,20 +594,16 @@ export default function AnalyticsPage() {
             <div key={i}>
               <div className="mb-1 flex items-center justify-between text-xs">
                 <span className="flex items-center gap-2">
-                  <span className="w-4 text-[10px] font-bold text-gray-300 dark:text-neutral-600">
-                    #{i + 1}
-                  </span>
-                  <span className="max-w-32.5 truncate font-medium text-gray-700 dark:text-neutral-200">
-                    {p.name}
-                  </span>
+                  <span className="w-4 text-[10px] font-bold text-neutral-600">#{i + 1}</span>
+                  <span className="max-w-32.5 truncate font-medium text-neutral-200">{p.name}</span>
                 </span>
-                <span className="shrink-0 font-semibold text-gray-700 dark:text-neutral-200">
+                <span className="shrink-0 font-semibold text-neutral-200">
                   {formatCurrency(p.revenue)}
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/6">
                 <div
-                  className="h-1.5 rounded-full bg-[#4A6CF7]"
+                  className="h-1.5 rounded-full bg-[#141414]"
                   style={{ width: `${(p.revenue / topProductsRev[0].revenue) * 100}%` }}
                 />
               </div>
@@ -622,13 +615,11 @@ export default function AnalyticsPage() {
   )
 
   const paymentCard = (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
-        Formas de Pagamento
-      </h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">Pedidos confirmados</p>
+    <div className="rounded-3xl bg-[#141414] p-6 ring-1 ring-white/6">
+      <h2 className="text-sm font-semibold text-neutral-300">Formas de Pagamento</h2>
+      <p className="mt-0.5 mb-5 text-xs text-neutral-500">Pedidos confirmados</p>
       {confirmedOrders.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+        <div className="flex h-32 items-center justify-center text-sm text-neutral-600">
           Sem dados
         </div>
       ) : (
@@ -638,16 +629,14 @@ export default function AnalyticsPage() {
               <div className="mb-1 flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                  <span className="font-medium text-gray-700 dark:text-neutral-200">{p.label}</span>
+                  <span className="font-medium text-neutral-200">{p.label}</span>
                 </span>
-                <span className="text-gray-400 dark:text-neutral-500">
+                <span className="text-neutral-500">
                   {p.count} pedido{p.count !== 1 ? 's' : ''} ·{' '}
-                  <span className="font-semibold text-gray-700 dark:text-neutral-200">
-                    {p.pct}%
-                  </span>
+                  <span className="font-semibold text-neutral-200">{p.pct}%</span>
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/6">
                 <div
                   className="h-1.5 rounded-full transition-all"
                   style={{ width: `${p.pct}%`, backgroundColor: p.color }}
@@ -662,10 +651,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center">
-        <MobileMenuButton />
-        <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Analytics</h1>
-      </div>
+      <PageHeader title="Analytics" subtitle="Entenda o desempenho de vendas da loja" />
 
       {/* KPIs mobile */}
       <div className="lg:hidden">
@@ -674,16 +660,13 @@ export default function AnalyticsPage() {
       {/* KPIs desktop */}
       <div className="hidden grid-cols-2 gap-5 lg:grid xl:grid-cols-4">
         {kpis.map((k) => (
-          <div
-            key={k.label}
-            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800"
-          >
-            <p className="text-xs text-gray-400 dark:text-neutral-500">{k.label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{k.value}</p>
+          <div key={k.label} className="rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+            <p className="text-xs text-neutral-500">{k.label}</p>
+            <p className="mt-1 text-2xl font-bold text-white">{k.value}</p>
             {k.trend ? (
               <Trend up={k.up} value={k.trend} label={k.sub} />
             ) : (
-              <p className="mt-1.5 text-xs text-gray-400 dark:text-neutral-500">{k.sub}</p>
+              <p className="mt-1.5 text-xs text-neutral-500">{k.sub}</p>
             )}
             <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: k.accent }} />
           </div>
@@ -693,19 +676,16 @@ export default function AnalyticsPage() {
       {/* Receita mensal + Horário de Compras */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
         {/* Receita */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-3 dark:bg-neutral-900 dark:ring-neutral-800">
-          <h2 className="mb-1 text-sm font-semibold text-gray-600 dark:text-neutral-300">
-            Receita Mensal
-          </h2>
-          <p className="mb-4 text-xs text-gray-400 dark:text-neutral-500">Jan – {monthLabel}</p>
+        <div className="rounded-3xl bg-[#141414] p-6 ring-1 ring-white/6 xl:col-span-3">
+          <h2 className="mb-1 text-sm font-semibold text-neutral-300">Receita Mensal</h2>
+          <p className="mb-4 text-xs text-neutral-500">Jan – {monthLabel}</p>
           <MonthlyBarChart data={monthlyRev} prev={monthlyPrev} selectedMonth={selectedMonth} />
           <div className="mt-4 flex items-center gap-5">
-            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" /> {currentYear}
+            <span className="flex items-center gap-1.5 text-xs text-neutral-400">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#141414]" /> {currentYear}
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" />{' '}
-              {currentYear - 1}
+            <span className="flex items-center gap-1.5 text-xs text-neutral-400">
+              <span className="h-2.5 w-2.5 rounded-full bg-white/10" /> {currentYear - 1}
             </span>
           </div>
           <div className="mt-4 flex flex-wrap gap-1.5">
@@ -713,7 +693,7 @@ export default function AnalyticsPage() {
               <button
                 key={m}
                 onClick={() => setSelectedMonth(selectedMonth === i ? null : i)}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${selectedMonth === i ? 'bg-[#4A6CF7] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700'}`}
+                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${selectedMonth === i ? 'bg-white text-black' : 'bg-white/6 text-neutral-400 hover:bg-white/10'}`}
               >
                 {m}
                 {selectedMonth === i && (
@@ -725,17 +705,15 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Horário de Compras */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-2 dark:bg-neutral-900 dark:ring-neutral-800">
-          <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
-            Horário de Compras
-          </h2>
-          <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
+        <div className="rounded-3xl bg-[#141414] p-6 ring-1 ring-white/6 xl:col-span-2">
+          <h2 className="text-sm font-semibold text-neutral-300">Horário de Compras</h2>
+          <p className="mt-0.5 mb-5 text-xs text-neutral-500">
             {confirmedOrders.length > 0
               ? `Baseado em ${confirmedOrders.length} pedidos confirmados`
               : 'Sem dados ainda'}
           </p>
           {confirmedOrders.length === 0 ? (
-            <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+            <div className="flex h-32 items-center justify-center text-sm text-neutral-600">
               Sem dados
             </div>
           ) : (
@@ -749,16 +727,12 @@ export default function AnalyticsPage() {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: seg.color }}
                       />
-                      <span className="font-medium text-gray-700 dark:text-neutral-200">
-                        {seg.label}
-                      </span>
-                      <span className="text-gray-400 dark:text-neutral-500">{seg.sublabel}</span>
+                      <span className="font-medium text-neutral-200">{seg.label}</span>
+                      <span className="text-neutral-500">{seg.sublabel}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-400 dark:text-neutral-500">{seg.count} ped.</span>
-                      <span className="w-8 text-right font-bold text-gray-800 dark:text-neutral-100">
-                        {seg.pct}%
-                      </span>
+                      <span className="text-neutral-500">{seg.count} ped.</span>
+                      <span className="w-8 text-right font-bold text-neutral-100">{seg.pct}%</span>
                     </div>
                   </div>
                 ))}
@@ -779,7 +753,7 @@ export default function AnalyticsPage() {
         {paymentCard}
       </div>
 
-      <p className="text-xs text-gray-400 dark:text-neutral-500">
+      <p className="text-xs text-neutral-500">
         {productsData?.total ?? 0} produtos · {confirmedOrders.length} pedidos confirmados ·
         Atualizado em {now.toLocaleDateString('pt-BR')}
       </p>

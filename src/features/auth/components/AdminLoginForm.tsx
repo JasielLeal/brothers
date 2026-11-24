@@ -108,7 +108,7 @@ export function AdminLoginForm() {
       <Button
         type="submit"
         disabled={isPending}
-        className="h-11 w-full rounded-xl bg-[#14649e] text-sm font-semibold text-white shadow-sm hover:bg-[#0a4d7a] disabled:opacity-60"
+        className="h-11 w-full rounded-xl bg-[#1f1f1f] text-sm font-semibold text-white shadow-sm hover:bg-[#2a2a2a] disabled:opacity-60"
       >
         {isPending ? (
           <>

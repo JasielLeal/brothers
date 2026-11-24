@@ -1,9 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import Image from 'next/image'
+import logo from '@/../public/logo.png'
 import {
+  MoreHorizontal,
+  ArrowUpRight,
   Loader2,
   ShoppingBag,
   Clock,
@@ -52,36 +56,36 @@ const statusConfig: Record<
 > = {
   PENDING: {
     label: 'Pendente',
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
     dot: 'bg-amber-400',
     icon: Clock,
   },
   PROCESSING: {
     label: 'Pendente',
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
     dot: 'bg-amber-400',
     icon: Clock,
   },
   SHIPPED: {
     label: 'Pendente',
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
     dot: 'bg-amber-400',
     icon: Clock,
   },
   DELIVERED: {
     label: 'Confirmado',
-    bg: 'bg-green-50 dark:bg-green-500/10',
-    text: 'text-green-600 dark:text-green-400',
+    bg: 'bg-green-500/10',
+    text: 'text-green-400',
     dot: 'bg-green-500',
     icon: CheckCircle2,
   },
   CANCELLED: {
     label: 'Cancelado',
-    bg: 'bg-red-50 dark:bg-red-500/10',
-    text: 'text-red-500 dark:text-red-400',
+    bg: 'bg-red-500/10',
+    text: 'text-red-400',
     dot: 'bg-red-400',
     icon: XCircle,
   },
@@ -106,6 +110,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   return (
     <span
       className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${cfg.bg} ${cfg.text}`}
+      style={{ whiteSpace: 'nowrap' }}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
@@ -336,20 +341,18 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-background relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl shadow-2xl">
+      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-[#141414] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#4A6CF7]/10">
-              <ShoppingCart className="h-4 w-4 text-[#4A6CF7]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10">
+              <ShoppingCart className="h-4 w-4 text-white" />
             </div>
-            <h2 className="text-base font-semibold text-gray-800 dark:text-neutral-100">
-              Novo Pedido
-            </h2>
+            <h2 className="text-base font-semibold text-neutral-100">Novo Pedido</h2>
           </div>
           <button
             onClick={onClose}
-            className="hover:bg-muted rounded-md p-1.5 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/8 hover:text-neutral-300"
           >
             <X className="h-4 w-4" />
           </button>
@@ -362,12 +365,12 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
             {/* Busca */}
             <div className="p-4 pb-2">
               <div className="relative">
-                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-neutral-500" />
+                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-neutral-500" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar produto ou digitar barcode..."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-100 py-2 pr-4 pl-9 text-sm text-gray-700 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:bg-neutral-900"
+                  className="w-full rounded-xl border border-white/10 bg-white/6 py-2 pr-4 pl-9 text-sm text-neutral-200 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                 />
               </div>
             </div>
@@ -376,9 +379,9 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
             <div className="min-h-0 flex-1 overflow-y-auto px-4">
               {/* Barcode hit banner */}
               {barcodeHit && (
-                <div className="mb-2 space-y-2 rounded-xl border border-green-200 bg-green-50 p-3 dark:border-green-500/20 dark:bg-green-500/10">
+                <div className="mb-2 space-y-2 rounded-xl border border-green-500/20 bg-green-500/10 p-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/6">
                       {barcodeHit.image && (
                         <Image
                           src={barcodeHit.image}
@@ -390,13 +393,13 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-green-800 dark:text-green-400">
+                      <p className="truncate text-sm font-semibold text-green-400">
                         {barcodeHit.product.name}
                       </p>
-                      <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                      <div className="flex items-center gap-1.5 text-xs text-green-400">
                         {barcodeHit.colorHex && (
                           <span
-                            className="inline-block h-2.5 w-2.5 rounded-full border border-green-300 dark:border-green-500/20"
+                            className="inline-block h-2.5 w-2.5 rounded-full border border-green-500/20"
                             style={{ backgroundColor: barcodeHit.colorHex }}
                           />
                         )}
@@ -409,7 +412,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                         setBarcodeHit(null)
                         setSearch('')
                       }}
-                      className="text-green-400 hover:text-green-700 dark:hover:text-green-400"
+                      className="text-green-400 hover:text-green-400"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -448,15 +451,13 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                             setSearch('')
                             setBarcodeHit(null)
                           }}
-                          className="flex items-center gap-1 rounded-lg border border-green-300 bg-white px-2.5 py-1 text-xs font-bold text-green-700 transition-colors hover:bg-green-600 hover:text-white dark:border-green-500/20 dark:bg-neutral-900 dark:text-green-400"
+                          className="flex items-center gap-1 rounded-lg border border-green-500/20 bg-[#141414] px-2.5 py-1 text-xs font-bold text-green-400 transition-colors hover:bg-green-600 hover:text-white"
                         >
                           {s.size} <span className="opacity-60">({s.stock})</span>
                         </button>
                       ))}
                     {barcodeHit.sizes.every((s) => s.stock === 0) && (
-                      <p className="text-xs text-red-500 dark:text-red-400">
-                        Sem estoque disponível
-                      </p>
+                      <p className="text-xs text-red-400">Sem estoque disponível</p>
                     )}
                   </div>
                 </div>
@@ -464,14 +465,14 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
               {barcodeChecking ? (
                 <div className="flex justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-300 dark:text-neutral-600" />
+                  <Loader2 className="h-5 w-5 animate-spin text-neutral-600" />
                 </div>
               ) : loadingProducts ? (
                 <div className="flex justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-300 dark:text-neutral-600" />
+                  <Loader2 className="h-5 w-5 animate-spin text-neutral-600" />
                 </div>
               ) : products.length === 0 ? (
-                <p className="py-6 text-center text-xs text-gray-400 dark:text-neutral-500">
+                <p className="py-6 text-center text-xs text-neutral-500">
                   {search ? 'Nenhum produto encontrado.' : 'Digite para buscar produtos.'}
                 </p>
               ) : (
@@ -488,7 +489,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                     return (
                       <div
                         key={p.id}
-                        className={`rounded-xl border transition-colors ${isExpanded ? 'border-[#4A6CF7]/40 bg-[#4A6CF7]/3' : 'border-gray-100 bg-white dark:border-neutral-800 dark:bg-neutral-900'}`}
+                        className={`rounded-xl border transition-colors ${isExpanded ? 'border-white/40 bg-white/3' : 'border-white/6 bg-[#141414]'}`}
                       >
                         {/* Product row */}
                         <button
@@ -496,7 +497,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                           onClick={() => handleProductClick(p)}
                           className="flex w-full items-center gap-3 p-2.5 text-left"
                         >
-                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/6">
                             {p.images[0] && (
                               <Image
                                 src={p.images[0]}
@@ -508,15 +509,15 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
+                            <p className="truncate text-sm font-medium text-neutral-100">
                               {p.name}
                             </p>
-                            <p className="text-xs text-gray-400 dark:text-neutral-500">
+                            <p className="text-xs text-neutral-500">
                               {formatCurrency(p.price)} · Estoque: {p.stock}
                             </p>
                           </div>
                           <div
-                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${totalQty > 0 ? 'bg-[#4A6CF7] text-white' : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-500'}`}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${totalQty > 0 ? 'bg-white text-black' : 'bg-white/6 text-neutral-500'}`}
                           >
                             {totalQty > 0 ? totalQty : <Plus className="h-3 w-3" />}
                           </div>
@@ -524,13 +525,13 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
                         {/* Inline variant picker */}
                         {isExpanded && (
-                          <div className="space-y-2 border-t border-[#4A6CF7]/10 px-3 pt-2 pb-3">
+                          <div className="space-y-2 border-t border-white/10 px-3 pt-2 pb-3">
                             {loadingVariants === p.id ? (
                               <div className="flex justify-center py-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-gray-300 dark:text-neutral-600" />
+                                <Loader2 className="h-4 w-4 animate-spin text-neutral-600" />
                               </div>
                             ) : pVariants.length === 0 ? (
-                              <p className="py-1 text-center text-xs text-gray-400 dark:text-neutral-500">
+                              <p className="py-1 text-center text-xs text-neutral-500">
                                 Sem variantes — produto sem cor/tamanho
                               </p>
                             ) : (
@@ -542,10 +543,10 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                                       key={v.id}
                                       type="button"
                                       onClick={() => setPickedVariant(v)}
-                                      className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium transition-all ${pickedVariant?.id === v.id ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:border-neutral-600'}`}
+                                      className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium transition-all ${pickedVariant?.id === v.id ? 'border-white/40 bg-white/10 text-white' : 'border-white/10 bg-[#141414] text-neutral-400 hover:border-neutral-600'}`}
                                     >
                                       <div
-                                        className="h-2.5 w-2.5 rounded-full border border-gray-300 dark:border-neutral-600"
+                                        className="h-2.5 w-2.5 rounded-full border border-neutral-600"
                                         style={{ backgroundColor: v.colorHex ?? '#888' }}
                                       />
                                       {v.colorName}
@@ -564,7 +565,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                                           onClick={() =>
                                             addToCartWithVariant(p, pickedVariant, s.size)
                                           }
-                                          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-bold text-gray-700 transition-all hover:border-[#4A6CF7] hover:bg-[#4A6CF7] hover:text-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+                                          className="rounded-lg border border-white/10 bg-[#141414] px-2.5 py-1 text-xs font-bold text-neutral-200 transition-all hover:border-white/40 hover:bg-white/8 hover:text-white"
                                         >
                                           {s.size} <span className="opacity-50">({s.stock})</span>
                                         </button>
@@ -589,16 +590,16 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
               {/* Carrinho */}
               {cart.length > 0 && (
                 <div className="mt-3 mb-2">
-                  <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+                  <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                     Itens no pedido
                   </p>
                   <div className="space-y-2">
                     {cart.map((item) => (
                       <div
                         key={item.cartKey}
-                        className="flex items-center gap-3 rounded-xl bg-gray-50 p-2.5 dark:bg-neutral-950"
+                        className="flex items-center gap-3 rounded-xl bg-white/4 p-2.5"
                       >
-                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-neutral-700">
+                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white/10">
                           {item.image && (
                             <Image
                               src={item.image}
@@ -610,18 +611,18 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium text-gray-800 dark:text-neutral-100">
+                          <p className="truncate text-xs font-medium text-neutral-100">
                             {item.productName}
                           </p>
                           <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                            <p className="text-xs text-gray-400 dark:text-neutral-500">
+                            <p className="text-xs text-neutral-500">
                               {formatCurrency(item.price)} × {item.quantity}
                             </p>
                             {item.color && (
-                              <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-neutral-500">
+                              <span className="flex items-center gap-1 text-[10px] text-neutral-500">
                                 {item.colorHex && (
                                   <span
-                                    className="inline-block h-2 w-2 rounded-full border border-gray-300 dark:border-neutral-600"
+                                    className="inline-block h-2 w-2 rounded-full border border-neutral-600"
                                     style={{ backgroundColor: item.colorHex }}
                                   />
                                 )}
@@ -629,7 +630,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                               </span>
                             )}
                             {item.size && (
-                              <span className="rounded border border-gray-200 px-1 text-[10px] font-bold text-gray-500 dark:border-neutral-700 dark:text-neutral-400">
+                              <span className="rounded border border-white/10 px-1 text-[10px] font-bold text-neutral-400">
                                 {item.size}
                               </span>
                             )}
@@ -639,17 +640,17 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                           <button
                             type="button"
                             onClick={() => updateQty(item.cartKey, item.quantity - 1)}
-                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-neutral-300 hover:bg-neutral-600"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
-                          <span className="w-5 text-center text-xs font-semibold text-gray-700 dark:text-neutral-200">
+                          <span className="w-5 text-center text-xs font-semibold text-neutral-200">
                             {item.quantity}
                           </span>
                           <button
                             type="button"
                             onClick={() => updateQty(item.cartKey, item.quantity + 1)}
-                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-neutral-300 hover:bg-neutral-600"
                           >
                             <Plus className="h-3 w-3" />
                           </button>
@@ -663,13 +664,13 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Divider */}
-          <div className="hidden bg-gray-100 lg:block dark:bg-neutral-800" />
+          <div className="hidden bg-white/6 lg:block" />
 
           {/* RIGHT — dados do cliente */}
           <div className="space-y-4 overflow-y-auto p-4">
             {/* Cliente */}
             <div>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+              <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 Cliente
               </p>
               <div className="space-y-2">
@@ -677,21 +678,21 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Nome completo"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                  className="w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                 />
                 <input
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(maskPhone(e.target.value))}
                   placeholder="(11) 99999-9999"
                   inputMode="numeric"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                  className="w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                 />
               </div>
             </div>
 
             {/* Pagamento */}
             <div>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+              <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 Pagamento
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -700,7 +701,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                     key={m}
                     type="button"
                     onClick={() => setPaymentMethod(m)}
-                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${paymentMethod === m ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-600'}`}
+                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${paymentMethod === m ? 'border-white/40 bg-white/10 text-white' : 'border-white/10 bg-white/4 text-neutral-400 hover:border-neutral-600'}`}
                   >
                     {PAYMENT_LABELS[m]}
                   </button>
@@ -710,7 +711,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
             {/* Desconto */}
             <div>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+              <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 Desconto
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -722,7 +723,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                       setDiscountType((prev) => (prev === t ? null : t))
                       setDiscountValue('')
                     }}
-                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${discountType === t ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-600'}`}
+                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${discountType === t ? 'border-white/40 bg-white/10 text-white' : 'border-white/10 bg-white/4 text-neutral-400 hover:border-neutral-600'}`}
                   >
                     {t === 'PERCENTAGE' ? '% Percentual' : 'R$ Valor fixo'}
                   </button>
@@ -730,7 +731,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
               </div>
               {discountType && (
                 <div className="relative mt-2">
-                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-xs font-semibold text-gray-400 dark:text-neutral-500">
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-xs font-semibold text-neutral-500">
                     {discountType === 'PERCENTAGE' ? '%' : 'R$'}
                   </span>
                   <input
@@ -739,7 +740,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                     placeholder={discountType === 'PERCENTAGE' ? 'Ex: 10' : 'Ex: 20,00'}
                     inputMode="decimal"
                     autoFocus
-                    className="w-full rounded-xl border border-gray-200 bg-gray-100 py-2 pr-4 pl-9 text-sm text-gray-800 placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                    className="w-full rounded-xl border border-white/10 bg-white/6 py-2 pr-4 pl-9 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                   />
                 </div>
               )}
@@ -747,7 +748,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
             {/* Entrega */}
             <div>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+              <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 Tipo de entrega
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -756,7 +757,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                     key={t}
                     type="button"
                     onClick={() => setDeliveryType(t)}
-                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${deliveryType === t ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-600'}`}
+                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${deliveryType === t ? 'border-white/40 bg-white/10 text-white' : 'border-white/10 bg-white/4 text-neutral-400 hover:border-neutral-600'}`}
                   >
                     {t === 'PICKUP' ? 'Retirada na loja' : 'Entrega'}
                   </button>
@@ -767,7 +768,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
             {/* Endereço (só se DELIVERY) */}
             {deliveryType === 'DELIVERY' && (
               <div>
-                <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+                <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                   Endereço de entrega
                 </p>
                 <div className="space-y-2">
@@ -775,27 +776,27 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                     value={street}
                     onChange={(e) => setStreet(e.target.value)}
                     placeholder="Rua, número, bairro *"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                    className="w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="Cidade"
-                      className="rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                      className="rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                     />
                     <input
                       value={uf}
                       onChange={(e) => setUf(e.target.value)}
                       placeholder="UF"
-                      className="rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                      className="rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                     />
                   </div>
                   <input
                     value={zipCode}
                     onChange={(e) => setZipCode(e.target.value)}
                     placeholder="CEP"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                    className="w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
                   />
                 </div>
               </div>
@@ -803,7 +804,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
 
             {/* Observações */}
             <div>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+              <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 Observações
               </p>
               <textarea
@@ -811,7 +812,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="Opcional"
-                className="w-full resize-none rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-900"
+                className="w-full resize-none rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
               />
             </div>
           </div>
@@ -820,28 +821,26 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
         {/* Footer */}
         <div className="flex items-center justify-between border-t px-6 py-4">
           <div>
-            <p className="text-xs text-gray-400 dark:text-neutral-500">
+            <p className="text-xs text-neutral-500">
               {cart.length} {cart.length === 1 ? 'item' : 'itens'}
             </p>
             {discountAmount > 0 ? (
               <>
-                <p className="text-xs text-gray-400 line-through dark:text-neutral-500">
-                  {formatCurrency(subtotal)}
-                </p>
-                <p className="text-lg font-bold text-[#4A6CF7]">{formatCurrency(total)}</p>
-                <p className="text-xs font-medium text-green-600 dark:text-green-400">
+                <p className="text-xs text-neutral-500 line-through">{formatCurrency(subtotal)}</p>
+                <p className="text-lg font-bold text-white">{formatCurrency(total)}</p>
+                <p className="text-xs font-medium text-green-400">
                   -{formatCurrency(discountAmount)} de desconto
                 </p>
               </>
             ) : (
-              <p className="text-lg font-bold text-[#4A6CF7]">{formatCurrency(total)}</p>
+              <p className="text-lg font-bold text-white">{formatCurrency(total)}</p>
             )}
           </div>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-neutral-300 hover:bg-white/8"
             >
               Cancelar
             </button>
@@ -849,7 +848,7 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={handleSubmit}
               disabled={!canSubmit || isPending}
-              className="flex items-center gap-2 rounded-xl bg-[#4A6CF7] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-50"
+              className="flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50"
             >
               {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Registrar pedido
@@ -1183,59 +1182,55 @@ function ExchangeItemModal({
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-background flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl shadow-2xl">
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-[#141414] shadow-2xl">
         <div className="flex items-center justify-between border-b px-5 py-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#4A6CF7]/10">
-              <ArrowLeftRight className="h-4 w-4 text-[#4A6CF7]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10">
+              <ArrowLeftRight className="h-4 w-4 text-white" />
             </div>
-            <h2 className="text-base font-semibold text-gray-800 dark:text-neutral-100">
-              Trocar item
-            </h2>
+            <h2 className="text-base font-semibold text-neutral-100">Trocar item</h2>
           </div>
           <button
             onClick={onClose}
-            className="hover:bg-muted rounded-md p-1.5 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/8 hover:text-neutral-300"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          <div className="mb-4 rounded-xl bg-gray-50 p-3 dark:bg-neutral-950">
-            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+          <div className="mb-4 rounded-xl bg-white/4 p-3">
+            <p className="mb-1 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
               Item atual
             </p>
-            <p className="text-sm font-medium text-gray-800 dark:text-neutral-100">
-              {item.productName}
-            </p>
-            <p className="text-xs text-gray-400 dark:text-neutral-500">
+            <p className="text-sm font-medium text-neutral-100">{item.productName}</p>
+            <p className="text-xs text-neutral-500">
               Qtd: {item.quantity} · {formatCurrency(item.price)} un.
               {item.color && ` · ${item.color}`}
               {item.size && ` · ${item.size}`}
             </p>
           </div>
 
-          <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+          <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
             Novo produto
           </p>
           <div className="relative mb-3">
-            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-neutral-500" />
+            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-neutral-500" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar produto..."
-              className="w-full rounded-xl border border-gray-200 bg-gray-100 py-2 pr-4 pl-9 text-sm text-gray-700 focus:border-[#4A6CF7] focus:bg-white focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:bg-neutral-900"
+              className="w-full rounded-xl border border-white/10 bg-white/6 py-2 pr-4 pl-9 text-sm text-neutral-200 focus:border-white/30 focus:bg-[#141414] focus:ring-1 focus:ring-white/20 focus:outline-none"
             />
           </div>
 
           {!selectedProduct ? (
             loadingProducts ? (
               <div className="flex justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-300 dark:text-neutral-600" />
+                <Loader2 className="h-5 w-5 animate-spin text-neutral-600" />
               </div>
             ) : products.length === 0 ? (
-              <p className="py-6 text-center text-xs text-gray-400 dark:text-neutral-500">
+              <p className="py-6 text-center text-xs text-neutral-500">
                 {search ? 'Nenhum produto encontrado.' : 'Digite para buscar produtos.'}
               </p>
             ) : (
@@ -1245,9 +1240,9 @@ function ExchangeItemModal({
                     key={p.id}
                     type="button"
                     onClick={() => handlePickProduct(p)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-2.5 text-left transition-colors hover:border-[#4A6CF7]/40 dark:border-neutral-800 dark:bg-neutral-900"
+                    className="flex w-full items-center gap-3 rounded-xl border border-white/6 bg-[#141414] p-2.5 text-left transition-colors hover:border-white/40"
                   >
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/6">
                       {p.images[0] && (
                         <Image
                           src={p.images[0]}
@@ -1259,10 +1254,8 @@ function ExchangeItemModal({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
-                        {p.name}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-neutral-500">
+                      <p className="truncate text-sm font-medium text-neutral-100">{p.name}</p>
+                      <p className="text-xs text-neutral-500">
                         {formatCurrency(p.price)} · Estoque: {p.stock}
                       </p>
                     </div>
@@ -1272,8 +1265,8 @@ function ExchangeItemModal({
             )
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-xl border border-[#4A6CF7]/40 bg-[#4A6CF7]/5 p-2.5">
-                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
+              <div className="flex items-center gap-3 rounded-xl border border-white/40 bg-white/5 p-2.5">
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/6">
                   {selectedProduct.images[0] && (
                     <Image
                       src={selectedProduct.images[0]}
@@ -1285,10 +1278,10 @@ function ExchangeItemModal({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
+                  <p className="truncate text-sm font-medium text-neutral-100">
                     {selectedProduct.name}
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-neutral-500">
+                  <p className="text-xs text-neutral-500">
                     {formatCurrency(selectedProduct.price)}
                   </p>
                 </div>
@@ -1298,7 +1291,7 @@ function ExchangeItemModal({
                     setSelectedProduct(null)
                     setVariants([])
                   }}
-                  className="text-xs font-semibold text-[#4A6CF7] hover:underline"
+                  className="text-xs font-semibold text-white hover:underline"
                 >
                   Trocar
                 </button>
@@ -1306,7 +1299,7 @@ function ExchangeItemModal({
 
               {loadingVariants ? (
                 <div className="flex justify-center py-4">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-300 dark:text-neutral-600" />
+                  <Loader2 className="h-4 w-4 animate-spin text-neutral-600" />
                 </div>
               ) : needsVariant ? (
                 <div className="space-y-2">
@@ -1319,10 +1312,10 @@ function ExchangeItemModal({
                           setPickedVariant(v)
                           setPickedSize(null)
                         }}
-                        className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium transition-all ${pickedVariant?.id === v.id ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400'}`}
+                        className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium transition-all ${pickedVariant?.id === v.id ? 'border-white/40 bg-white/10 text-white' : 'border-white/10 bg-[#141414] text-neutral-400 hover:border-white/15'}`}
                       >
                         <div
-                          className="h-2.5 w-2.5 rounded-full border border-gray-300 dark:border-neutral-600"
+                          className="h-2.5 w-2.5 rounded-full border border-neutral-600"
                           style={{ backgroundColor: v.colorHex ?? '#888' }}
                         />
                         {v.colorName}
@@ -1338,7 +1331,7 @@ function ExchangeItemModal({
                             key={s.size}
                             type="button"
                             onClick={() => setPickedSize(s.size)}
-                            className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-all ${pickedSize === s.size ? 'border-[#4A6CF7] bg-[#4A6CF7] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-[#4A6CF7] dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200'}`}
+                            className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-all ${pickedSize === s.size ? 'border-white/40 bg-white text-black' : 'border-white/10 bg-[#141414] text-neutral-200 hover:border-white/40'}`}
                           >
                             {s.size} <span className="opacity-60">({s.stock})</span>
                           </button>
@@ -1352,36 +1345,34 @@ function ExchangeItemModal({
               ) : null}
 
               <div>
-                <p className="mb-1.5 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+                <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                   Quantidade
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-neutral-700 dark:text-neutral-300"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-neutral-300 hover:bg-white/15"
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>
-                  <span className="w-6 text-center text-sm font-semibold text-gray-700 dark:text-neutral-200">
+                  <span className="w-6 text-center text-sm font-semibold text-neutral-200">
                     {quantity}
                   </span>
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => q + 1)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-neutral-700 dark:text-neutral-300"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-neutral-300 hover:bg-white/15"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 dark:bg-neutral-950">
-                <span className="text-xs text-gray-500 dark:text-neutral-400">
-                  Diferença no total do pedido
-                </span>
+              <div className="flex items-center justify-between rounded-xl bg-white/4 px-3 py-2">
+                <span className="text-xs text-neutral-400">Diferença no total do pedido</span>
                 <span
-                  className={`text-sm font-bold ${priceDifference > 0 ? 'text-red-500' : priceDifference < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-neutral-400'}`}
+                  className={`text-sm font-bold ${priceDifference > 0 ? 'text-red-400' : priceDifference < 0 ? 'text-green-400' : 'text-neutral-400'}`}
                 >
                   {priceDifference > 0 ? '+' : ''}
                   {formatCurrency(priceDifference)}
@@ -1391,7 +1382,7 @@ function ExchangeItemModal({
           )}
 
           {error && (
-            <p className="mt-3 text-xs font-medium text-red-500">
+            <p className="mt-3 text-xs font-medium text-red-400">
               {(error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
                 'Não foi possível trocar o item.'}
             </p>
@@ -1402,7 +1393,7 @@ function ExchangeItemModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-neutral-300 hover:bg-white/8"
           >
             Cancelar
           </button>
@@ -1410,7 +1401,7 @@ function ExchangeItemModal({
             type="button"
             onClick={handleConfirm}
             disabled={!canConfirm || isPending}
-            className="flex items-center gap-2 rounded-xl bg-[#4A6CF7] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50"
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Confirmar troca
@@ -1471,24 +1462,22 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl dark:bg-neutral-900">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 dark:border-neutral-800">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-[#141414] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/6 px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4A6CF7]/10">
-              <Package className="h-4 w-4 text-[#4A6CF7]" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
+              <Package className="h-4 w-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-800 dark:text-neutral-100">
+              <p className="text-sm font-bold text-neutral-100">
                 {order.id.slice(0, 8).toUpperCase()}
               </p>
-              <p className="text-xs text-gray-400 dark:text-neutral-500">
-                {formatDate(order.createdAt)}
-              </p>
+              <p className="text-xs text-neutral-500">{formatDate(order.createdAt)}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-white/8 hover:text-neutral-300"
           >
             <X className="h-4 w-4" />
           </button>
@@ -1496,32 +1485,30 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
 
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
           <div>
-            <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+            <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
               Cliente
             </p>
-            <p className="text-sm font-semibold text-gray-800 dark:text-neutral-100">
-              {order.customerName}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-neutral-400">{order.customerPhone}</p>
+            <p className="text-sm font-semibold text-neutral-100">{order.customerName}</p>
+            <p className="text-xs text-neutral-400">{order.customerPhone}</p>
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+            <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
               Status
             </p>
             <StatusBadge status={order.status} />
           </div>
 
           <div>
-            <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
               Itens do pedido
             </p>
-            <div className="divide-y divide-gray-50 rounded-xl bg-gray-50/70 dark:divide-neutral-800">
+            <div className="divide-y divide-white/6 rounded-xl bg-white/4">
               {order.items.map((item, i) => {
                 const img = item.product?.images?.[0]
                 return (
                   <div key={item.id ?? i} className="flex items-center gap-3 px-3 py-3">
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-neutral-700">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                       {img && (
                         <Image
                           src={img}
@@ -1533,34 +1520,34 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
+                      <p className="truncate text-sm font-medium text-neutral-100">
                         {item.productName}
                       </p>
                       <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs text-gray-400 dark:text-neutral-500">
+                        <span className="text-xs text-neutral-500">
                           Qtd: {item.quantity} · {formatCurrency(item.price)} un.
                         </span>
                         {item.color && (
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-neutral-800 dark:text-neutral-400">
+                          <span className="rounded-full bg-white/6 px-2 py-0.5 text-[11px] font-medium text-neutral-400">
                             {item.color}
                           </span>
                         )}
                         {item.size && (
-                          <span className="rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-bold text-gray-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+                          <span className="rounded-md border border-white/10 bg-[#141414] px-1.5 py-0.5 text-[11px] font-bold text-neutral-300">
                             {item.size}
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
-                      <p className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
+                      <p className="text-sm font-semibold text-neutral-200">
                         {formatCurrency(item.price * item.quantity)}
                       </p>
                       {order.status !== 'CANCELLED' && (
                         <button
                           type="button"
                           onClick={() => setExchangingItem(item)}
-                          className="flex items-center gap-1 text-[11px] font-semibold text-[#4A6CF7] hover:underline"
+                          className="flex items-center gap-1 text-[11px] font-semibold text-white hover:underline"
                         >
                           <ArrowLeftRight className="h-3 w-3" />
                           Trocar
@@ -1573,7 +1560,7 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
             </div>
           </div>
 
-          <div className="space-y-1.5 rounded-xl bg-[#4A6CF7]/5 px-4 py-3">
+          <div className="space-y-1.5 rounded-xl bg-white/5 px-4 py-3">
             {(() => {
               const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0)
               const shipping = order.shippingCost ?? 0
@@ -1583,47 +1570,39 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                 <>
                   {hasBreakdown && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-neutral-400">Subtotal</span>
-                      <span className="text-gray-700 dark:text-neutral-200">
-                        {formatCurrency(subtotal)}
-                      </span>
+                      <span className="text-neutral-400">Subtotal</span>
+                      <span className="text-neutral-200">{formatCurrency(subtotal)}</span>
                     </div>
                   )}
                   {shipping > 0 && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-neutral-400">
+                      <span className="text-neutral-400">
                         Frete{order.shippingService ? ` · ${order.shippingService}` : ''}
                       </span>
-                      <span className="text-gray-700 dark:text-neutral-200">
-                        {formatCurrency(shipping)}
-                      </span>
+                      <span className="text-neutral-200">{formatCurrency(shipping)}</span>
                     </div>
                   )}
                   {discount > 0 && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-neutral-400">
+                      <span className="text-neutral-400">
                         Desconto{order.couponCode ? ` (${order.couponCode})` : ''}
                       </span>
-                      <span className="font-medium text-green-600 dark:text-green-400">
+                      <span className="font-medium text-green-400">
                         −{formatCurrency(discount)}
                       </span>
                     </div>
                   )}
-                  {hasBreakdown && <div className="h-px bg-[#4A6CF7]/10" />}
+                  {hasBreakdown && <div className="h-px bg-white/10" />}
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                      Total
-                    </p>
-                    <p className="text-base font-bold text-[#4A6CF7]">
-                      {formatCurrency(order.total)}
-                    </p>
+                    <p className="text-sm font-semibold text-neutral-200">Total</p>
+                    <p className="text-base font-bold text-white">{formatCurrency(order.total)}</p>
                   </div>
 
                   {canEditDiscount && !editingDiscount && (
                     <button
                       type="button"
                       onClick={startEditDiscount}
-                      className="flex items-center gap-1 pt-1 text-[11px] font-semibold text-[#4A6CF7] hover:underline"
+                      className="flex items-center gap-1 pt-1 text-[11px] font-semibold text-white hover:underline"
                     >
                       {discount > 0 ? <Pencil className="h-3 w-3" /> : <Tag className="h-3 w-3" />}
                       {discount > 0 ? 'Editar desconto' : 'Aplicar desconto'}
@@ -1631,9 +1610,9 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                   )}
 
                   {editingDiscount && (
-                    <div className="space-y-2 border-t border-[#4A6CF7]/10 pt-2">
+                    <div className="space-y-2 border-t border-white/10 pt-2">
                       {order.couponCode ? (
-                        <p className="text-xs text-gray-500 dark:text-neutral-400">
+                        <p className="text-xs text-neutral-400">
                           Este pedido já usa o cupom <strong>{order.couponCode}</strong>. Remova o
                           cupom para aplicar um desconto manual.
                         </p>
@@ -1648,7 +1627,7 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                                   setDiscountType(t)
                                   setDiscountValue('')
                                 }}
-                                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${discountType === t ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'border-gray-200 bg-white text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400'}`}
+                                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${discountType === t ? 'border-white/40 bg-white/10 text-white' : 'border-white/10 bg-[#141414] text-neutral-400'}`}
                               >
                                 {t === 'PERCENTAGE' ? '% Percentual' : 'R$ Valor fixo'}
                               </button>
@@ -1661,13 +1640,13 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                             }
                             placeholder={discountType === 'PERCENTAGE' ? 'Ex: 10' : 'Ex: 20,00'}
                             inputMode="decimal"
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-[#4A6CF7] focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                            className="w-full rounded-lg border border-white/10 bg-[#141414] px-3 py-1.5 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-white/30 focus:outline-none"
                           />
                           <div className="flex gap-2">
                             <button
                               type="button"
                               onClick={() => setEditingDiscount(false)}
-                              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                              className="flex-1 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/8"
                             >
                               Cancelar
                             </button>
@@ -1676,7 +1655,7 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                                 type="button"
                                 onClick={handleRemoveDiscount}
                                 disabled={isSavingDiscount}
-                                className="flex-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:opacity-60 dark:border-red-500/20 dark:text-red-400"
+                                className="flex-1 rounded-lg border border-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/15 disabled:opacity-60"
                               >
                                 Remover
                               </button>
@@ -1685,7 +1664,7 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
                               type="button"
                               onClick={handleSaveDiscount}
                               disabled={isSavingDiscount || !discountType || !discountValue}
-                              className="flex-1 rounded-lg bg-[#4A6CF7] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#3a5ce5] disabled:opacity-50"
+                              className="flex-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black hover:bg-white/90 disabled:opacity-50"
                             >
                               Aplicar
                             </button>
@@ -1700,44 +1679,36 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+            <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
               Endereço
             </p>
-            <div className="flex items-start gap-2 rounded-xl bg-gray-50/70 px-4 py-3">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400 dark:text-neutral-500" />
-              <p className="text-sm text-gray-600 dark:text-neutral-300">{address}</p>
+            <div className="flex items-start gap-2 rounded-xl bg-white/4 px-4 py-3">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
+              <p className="text-sm text-neutral-300">{address}</p>
             </div>
           </div>
 
           {order.exchanges && order.exchanges.length > 0 && (
             <div>
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-neutral-500">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 <History className="h-3.5 w-3.5" />
                 Histórico de trocas
               </p>
               <div className="space-y-2">
                 {order.exchanges.map((ex) => (
-                  <div
-                    key={ex.id}
-                    className="rounded-xl bg-gray-50/70 px-3 py-2.5 text-xs dark:bg-neutral-950"
-                  >
-                    <p className="text-gray-600 dark:text-neutral-300">
-                      <span className="text-gray-400 line-through dark:text-neutral-500">
-                        {ex.oldProductName}
-                      </span>{' '}
-                      →{' '}
-                      <span className="font-medium text-gray-800 dark:text-neutral-100">
-                        {ex.newProductName}
-                      </span>
+                  <div key={ex.id} className="rounded-xl bg-white/4 px-3 py-2.5 text-xs">
+                    <p className="text-neutral-300">
+                      <span className="text-neutral-500 line-through">{ex.oldProductName}</span> →{' '}
+                      <span className="font-medium text-neutral-100">{ex.newProductName}</span>
                     </p>
-                    <div className="mt-1 flex items-center justify-between text-gray-400 dark:text-neutral-500">
+                    <div className="mt-1 flex items-center justify-between text-neutral-500">
                       <span>{formatDate(ex.createdAt)}</span>
                       <span
                         className={
                           ex.priceDifference > 0
-                            ? 'font-semibold text-red-500'
+                            ? 'font-semibold text-red-400'
                             : ex.priceDifference < 0
-                              ? 'font-semibold text-green-600 dark:text-green-400'
+                              ? 'font-semibold text-green-400'
                               : ''
                         }
                       >
@@ -1751,16 +1722,16 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
             </div>
           )}
 
-          <p className="text-xs text-gray-400 dark:text-neutral-500">
+          <p className="text-xs text-neutral-500">
             Última atualização: {formatDate(order.updatedAt)}
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-gray-100 px-6 py-4 dark:border-neutral-800">
+        <div className="flex flex-col gap-2 border-t border-white/6 px-6 py-4">
           {order.status === 'DELIVERED' && (
             <button
               onClick={() => printReceipt(order)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/4 px-4 py-2.5 text-sm font-semibold text-neutral-200 transition-colors hover:bg-white/8"
             >
               <Printer className="h-4 w-4" />
               Imprimir nota fiscal
@@ -1771,7 +1742,7 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
               <button
                 onClick={handleConfirm}
                 disabled={isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#4A6CF7] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-60"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-60"
               >
                 {isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1832,7 +1803,7 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
             <button
               onClick={handleCancel}
               disabled={isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-500 transition-colors hover:bg-red-100 disabled:opacity-60 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-60"
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1854,87 +1825,12 @@ function OrderDrawer({ order, onClose }: { order: Order; onClose: () => void }) 
     </>
   )
 }
-
-/* ── Stats Carousel ───────────────────────────────────────── */
-function StatsCarousel({ stats }: { stats: { label: string; value: number; accent: string }[] }) {
-  const n = stats.length
-  const extended = [stats[n - 1], ...stats, stats[0]]
-  const [idx, setIdx] = useState(1)
-  const [animated, setAnimated] = useState(true)
-  const touchX = useRef(0)
-
-  useEffect(() => {
-    if (!animated) {
-      const t = setTimeout(() => setAnimated(true), 20)
-      return () => clearTimeout(t)
-    }
-  }, [animated])
-
-  useEffect(() => {
-    if (idx === 0) {
-      const t = setTimeout(() => {
-        setAnimated(false)
-        setIdx(n)
-      }, 350)
-      return () => clearTimeout(t)
-    }
-    if (idx === n + 1) {
-      const t = setTimeout(() => {
-        setAnimated(false)
-        setIdx(1)
-      }, 350)
-      return () => clearTimeout(t)
-    }
-  }, [idx, n])
-
-  const dot = idx === 0 ? n - 1 : idx === n + 1 ? 0 : idx - 1
-
-  return (
-    <div
-      className="overflow-hidden"
-      onTouchStart={(e) => {
-        touchX.current = e.targetTouches[0].clientX
-      }}
-      onTouchEnd={(e) => {
-        const diff = touchX.current - e.changedTouches[0].clientX
-        if (Math.abs(diff) > 40) setIdx((i) => i + (diff > 0 ? 1 : -1))
-      }}
-    >
-      <div
-        className="flex"
-        style={{
-          transform: `translateX(calc(-${idx * 100}%))`,
-          transition: animated ? 'transform 0.35s ease' : 'none',
-        }}
-      >
-        {extended.map((s, i) => (
-          <div key={i} className="w-full shrink-0">
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-              <p className="text-xs text-gray-400 dark:text-neutral-500">{s.label}</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
-              <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: s.accent }} />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex justify-center gap-1.5">
-        {stats.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              setAnimated(true)
-              setIdx(i + 1)
-            }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${dot === i ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 /* ── Page ─────────────────────────────────────────────────── */
+const PANEL = 'rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6'
+const ROW = 'rounded-2xl bg-white/4'
+
 export default function AdminOrdersPage() {
+  const { data: session } = useSession()
   const [activeFilter, setActiveFilter] = useState<OrderStatus | 'all'>('all')
   const [page, setPage] = useState(1)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -1955,244 +1851,241 @@ export default function AdminOrdersPage() {
 
   const pending = allOrders.filter((o) => o.status === 'PENDING').length
   const delivered = allOrders.filter((o) => o.status === 'DELIVERED').length
+  const cancelled = allOrders.filter((o) => o.status === 'CANCELLED').length
+  const confirmedRevenue = allOrders
+    .filter((o) => o.status === 'DELIVERED')
+    .reduce((sum, o) => sum + o.total, 0)
+
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin'
 
   const stats = [
-    { label: 'Total de Pedidos', value: allData?.total ?? 0, accent: '#4A6CF7' },
-    { label: 'Pendentes', value: pending, accent: '#F5A623' },
-    { label: 'Entregues', value: delivered, accent: '#22C55E' },
+    { label: 'Total de pedidos', value: allData?.total ?? 0, icon: ShoppingBag },
+    { label: 'Pendentes', value: pending, icon: Clock },
+    { label: 'Confirmados', value: delivered, icon: CheckCircle2 },
+    { label: 'Cancelados', value: cancelled, icon: XCircle },
   ]
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MobileMenuButton />
-          <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Pedidos</h1>
-        </div>
+      {/* top bar */}
+      <div className="flex items-center gap-3">
+        <MobileMenuButton />
+        <Image src={logo} alt="Brothers Outlet" className="h-8 w-auto shrink-0" priority />
+        <div className="flex-1" />
         <button
           onClick={() => setIsNewOrderOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4A6CF7] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5]"
+          className="flex h-11 items-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-black transition-opacity hover:opacity-90"
         >
-          <Plus className="h-4 w-4" />
-          Novo pedido
+          <Plus className="h-4 w-4" /> Novo Pedido
         </button>
       </div>
 
-      <div className="lg:hidden">
-        <StatsCarousel stats={stats} />
-      </div>
-      <div className="hidden grid-cols-3 gap-4 lg:grid">
-        {stats.map((s) => (
-          <div
-            key={s.label}
-            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800"
-          >
-            <p className="text-xs text-gray-400 dark:text-neutral-500">{s.label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
-            <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: s.accent }} />
-          </div>
-        ))}
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight text-white">Pedidos</h1>
+        <p className="mt-1 text-sm text-neutral-500">
+          {firstName}, acompanhe e gerencie os pedidos da loja
+        </p>
       </div>
 
-      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-        <div className="grid grid-cols-2 gap-2 border-b border-gray-100 p-4 sm:flex sm:flex-wrap sm:gap-2 dark:border-neutral-800">
-          {FILTER_TABS.map((tab) => {
-            const count =
-              tab.key === 'all'
-                ? (allData?.total ?? 0)
-                : allOrders.filter((o) => o.status === tab.key).length
-            const isActive = activeFilter === tab.key
-            return (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  setActiveFilter(tab.key)
-                  setPage(1)
-                }}
-                className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${isActive ? 'bg-[#4A6CF7] text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'}`}
+      <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[1fr_20rem]">
+        {/* ── receita (topo no tablet, coluna lateral no 2xl) ── */}
+        <aside className="2xl:col-start-2 2xl:row-start-1">
+          <div className="flex flex-col justify-between rounded-3xl bg-white p-4 text-black">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-600">Receita confirmada</h2>
+              <ArrowUpRight className="h-4 w-4 text-neutral-400" />
+            </div>
+            <p className="mt-6 text-xs leading-tight text-neutral-500">
+              {delivered} pedido{delivered !== 1 ? 's' : ''} confirmado{delivered !== 1 ? 's' : ''}
+            </p>
+            <p className="text-4xl font-semibold tracking-tight">
+              {formatCurrency(confirmedRevenue)}
+            </p>
+          </div>
+        </aside>
+
+        {/* ── main column ─────────────────────────────── */}
+        <div className="min-w-0 space-y-5 2xl:col-start-1 2xl:row-start-1">
+          {/* stats */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {stats.map(({ label, value, icon: Icon }) => (
+              <div
+                key={label}
+                className="flex flex-col justify-between rounded-3xl bg-[#141414] p-4 ring-1 ring-white/6"
               >
-                {tab.label}
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-white text-gray-500 dark:bg-neutral-900 dark:text-neutral-400'}`}
-                >
-                  {count}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-7 w-7 animate-spin text-gray-300 dark:text-neutral-600" />
+                <div className="flex items-center justify-between">
+                  <Icon className="h-4 w-4 text-neutral-400" />
+                  <MoreHorizontal className="h-4 w-4 text-neutral-700" />
+                </div>
+                <p className="mt-6 text-xs leading-tight text-neutral-500">{label}</p>
+                <p className="text-4xl font-semibold tracking-tight text-white">{value}</p>
+              </div>
+            ))}
           </div>
-        ) : orders.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-400 dark:text-neutral-500">
-            Nenhum pedido encontrado.
-          </div>
-        ) : (
-          <>
-            <div className="divide-y divide-gray-50 dark:divide-neutral-800">
-              {orders.map((order) => {
-                const address = order.street
-                  ? `${order.city ?? ''} — ${order.state ?? ''}`
-                  : 'Retirada na loja'
-                return (
-                  <button
-                    key={order.id}
-                    onClick={() => setSelectedOrder(order)}
-                    className="group w-full px-6 py-4 text-left transition-colors hover:bg-gray-50/60 dark:hover:bg-neutral-800/60"
-                  >
-                    <div className="space-y-2 lg:hidden">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#4A6CF7]/10">
-                            <ShoppingBag className="h-3.5 w-3.5 text-[#4A6CF7]" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800 dark:text-neutral-100">
-                              {order.customerName}
-                            </p>
-                            <p className="text-[11px] text-gray-400 dark:text-neutral-500">
-                              {formatDate(order.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-gray-300 transition-transform group-hover:translate-x-0.5 dark:text-neutral-600" />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <StatusBadge status={order.status} />
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">
-                          {formatCurrency(order.total)}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {order.items.map((item, i) => (
-                          <span
-                            key={item.id ?? i}
-                            className="rounded-lg bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 dark:bg-neutral-800 dark:text-neutral-400"
-                          >
-                            {item.productName}{' '}
-                            <span className="text-gray-400 dark:text-neutral-500">
-                              ×{item.quantity}
-                            </span>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3 shrink-0 text-gray-300 dark:text-neutral-600" />
-                        <p className="text-[11px] text-gray-400 dark:text-neutral-500">{address}</p>
-                      </div>
-                    </div>
 
-                    <div className="hidden lg:block">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#4A6CF7]/10">
-                            <ShoppingBag className="h-4 w-4 text-[#4A6CF7]" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800 dark:text-neutral-100">
-                              {order.customerName}
-                            </p>
-                            <p className="text-xs text-gray-400 dark:text-neutral-500">
-                              {formatDate(order.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-gray-900 dark:text-white">
-                              {formatCurrency(order.total)}
-                            </p>
-                            {(order.shippingCost ?? 0) > 0 && (
-                              <p className="text-[11px] text-gray-400 dark:text-neutral-500">
-                                frete: {formatCurrency(order.shippingCost!)}
-                              </p>
-                            )}
-                            {order.couponCode && (
-                              <p className="text-[11px] text-green-600 dark:text-green-400">
-                                cupom: {order.couponCode}
-                              </p>
-                            )}
-                          </div>
-                          <StatusBadge status={order.status} />
-                          <ChevronRight className="h-4 w-4 text-gray-300 transition-transform group-hover:translate-x-0.5 dark:text-neutral-600" />
-                        </div>
-                      </div>
-                      <div className="mt-3 space-y-1 pl-12">
-                        {order.items.map((item, i) => (
-                          <div
-                            key={item.id ?? i}
-                            className="flex items-center justify-between text-xs"
-                          >
-                            <span className="flex flex-wrap items-center gap-1 text-gray-500 dark:text-neutral-400">
-                              {item.productName}
-                              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-400 dark:bg-neutral-800 dark:text-neutral-500">
-                                ×{item.quantity}
-                              </span>
-                              {item.color && (
-                                <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-400 dark:bg-neutral-800 dark:text-neutral-500">
-                                  {item.color}
-                                </span>
-                              )}
-                              {item.size && (
-                                <span className="rounded border border-gray-200 px-1 py-0.5 text-[10px] font-bold text-gray-500 dark:border-neutral-700 dark:text-neutral-400">
-                                  {item.size}
-                                </span>
-                              )}
-                            </span>
-                            <span className="font-medium text-gray-700 dark:text-neutral-200">
-                              {formatCurrency(item.price * item.quantity)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-2.5 flex items-center gap-1.5 pl-12">
-                        <MapPin className="h-3 w-3 shrink-0 text-gray-300 dark:text-neutral-600" />
-                        <p className="text-xs text-gray-400 dark:text-neutral-500">{address}</p>
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
+          {/* lista */}
+          <div className={PANEL}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-sm font-medium text-neutral-400">Todos os pedidos</h2>
+              <div className="flex flex-wrap gap-2">
+                {FILTER_TABS.map((tab) => {
+                  const count =
+                    tab.key === 'all'
+                      ? (allData?.total ?? 0)
+                      : allOrders.filter((o) => o.status === tab.key).length
+                  const isActive = activeFilter === tab.key
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => {
+                        setActiveFilter(tab.key)
+                        setPage(1)
+                      }}
+                      className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${isActive ? 'bg-white text-black' : 'bg-white/10 text-neutral-300 hover:bg-white/15'}`}
+                    >
+                      {tab.label}
+                      <span
+                        className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? 'bg-black/10 text-black' : 'bg-white/10 text-neutral-400'}`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-neutral-800">
-                <p className="text-xs text-gray-400 dark:text-neutral-500">
-                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} de {total}{' '}
-                  pedidos
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 disabled:opacity-30 dark:text-neutral-500 dark:hover:bg-neutral-800"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPage(p)}
-                      className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors ${p === page ? 'bg-[#4A6CF7] text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-800'}`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 disabled:opacity-30 dark:text-neutral-500 dark:hover:bg-neutral-800"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
+            {isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-7 w-7 animate-spin text-neutral-600" />
               </div>
+            ) : orders.length === 0 ? (
+              <p className="py-16 text-center text-sm text-neutral-600">
+                Nenhum pedido encontrado.
+              </p>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {orders.map((order) => {
+                    const address = order.street
+                      ? `${order.city ?? ''} — ${order.state ?? ''}`
+                      : 'Retirada na loja'
+                    return (
+                      <button
+                        key={order.id}
+                        onClick={() => setSelectedOrder(order)}
+                        className={`${ROW} group w-full px-4 py-3.5 text-left transition-colors hover:bg-white/8`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                              <ShoppingBag className="h-4 w-4 text-neutral-300" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-white">
+                                {order.customerName}
+                              </p>
+                              <p className="text-[11px] text-neutral-500">
+                                {formatDate(order.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-white">
+                                {formatCurrency(order.total)}
+                              </p>
+                              {(order.shippingCost ?? 0) > 0 && (
+                                <p className="text-[11px] text-neutral-500">
+                                  frete: {formatCurrency(order.shippingCost!)}
+                                </p>
+                              )}
+                              {order.couponCode && (
+                                <p className="text-[11px] text-green-400">
+                                  cupom: {order.couponCode}
+                                </p>
+                              )}
+                            </div>
+                            <StatusBadge status={order.status} />
+                            <ChevronRight className="hidden h-4 w-4 text-neutral-600 transition-transform group-hover:translate-x-0.5 sm:block" />
+                          </div>
+                        </div>
+
+                        <div className="mt-3 space-y-1.5 sm:pl-12">
+                          {order.items.map((item, i) => (
+                            <div
+                              key={item.id ?? i}
+                              className="flex items-center justify-between gap-3 text-xs"
+                            >
+                              <span className="flex min-w-0 flex-wrap items-center gap-1 text-neutral-400">
+                                <span className="truncate">{item.productName}</span>
+                                <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] text-neutral-300">
+                                  ×{item.quantity}
+                                </span>
+                                {item.color && (
+                                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] text-neutral-400">
+                                    {item.color}
+                                  </span>
+                                )}
+                                {item.size && (
+                                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-neutral-300">
+                                    {item.size}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="shrink-0 font-medium text-neutral-200">
+                                {formatCurrency(item.price * item.quantity)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-2.5 flex items-center gap-1.5 sm:pl-12">
+                          <MapPin className="h-3 w-3 shrink-0 text-neutral-600" />
+                          <p className="text-[11px] text-neutral-500">{address}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="mt-4 flex items-center justify-between px-1">
+                    <p className="text-xs text-neutral-500">
+                      {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} de {total}{' '}
+                      pedidos
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-white/10 disabled:opacity-30"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPage(p)}
+                          className={`h-8 w-8 rounded-full text-xs font-semibold transition-colors ${p === page ? 'bg-white text-black' : 'text-neutral-400 hover:bg-white/10'}`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-white/10 disabled:opacity-30"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+        </div>
       </div>
 
       {selectedOrder && (

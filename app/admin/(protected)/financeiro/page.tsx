@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { useOrders } from '@/features/orders/hooks/useOrders'
 import { useProducts } from '@/features/products/hooks/useProducts'
 import {
@@ -82,25 +82,23 @@ function AddExpenseModal({ onClose }: { onClose: () => void }) {
   }
 
   const inputCls =
-    'w-full rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-950 px-3 py-2 text-sm text-gray-800 dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#4A6CF7] focus:bg-white dark:focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#4A6CF7]/30'
+    'w-full rounded-xl border border-white/10 bg-white/4 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-white/30 focus:bg-[#141414] focus:outline-none focus:ring-1 focus:ring-white/20'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-neutral-900">
+      <div className="w-full max-w-md rounded-2xl bg-[#141414] shadow-2xl">
         <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-neutral-100">
-            Nova Despesa
-          </h2>
+          <h2 className="text-base font-semibold text-neutral-100">Nova Despesa</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/8 hover:text-neutral-300"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="space-y-4 p-6">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+            <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
               Descrição *
             </label>
             <input
@@ -112,7 +110,7 @@ function AddExpenseModal({ onClose }: { onClose: () => void }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+              <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
                 Valor (R$) *
               </label>
               <input
@@ -124,9 +122,7 @@ function AddExpenseModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
-                Data *
-              </label>
+              <label className="mb-1.5 block text-xs font-semibold text-neutral-400">Data *</label>
               <input
                 type="date"
                 value={date}
@@ -136,7 +132,7 @@ function AddExpenseModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+            <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
               Categoria *
             </label>
             <select
@@ -152,7 +148,7 @@ function AddExpenseModal({ onClose }: { onClose: () => void }) {
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-neutral-400">
+            <label className="mb-1.5 block text-xs font-semibold text-neutral-400">
               Observações
             </label>
             <textarea
@@ -167,14 +163,14 @@ function AddExpenseModal({ onClose }: { onClose: () => void }) {
         <div className="flex justify-end gap-3 border-t px-6 py-4">
           <button
             onClick={onClose}
-            className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-neutral-300 hover:bg-white/8"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
             disabled={!canSubmit || isPending}
-            className="flex items-center gap-2 rounded-xl bg-[#4A6CF7] px-5 py-2 text-sm font-semibold text-white hover:bg-[#3a5ce5] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-white/90 disabled:opacity-50"
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Salvar
@@ -261,61 +257,61 @@ export default function FinanceiroPage() {
     {
       label: 'Receita',
       value: revenue,
-      color: 'text-green-600 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-500/10',
+      color: 'text-green-400',
+      bg: 'bg-green-500/10',
       trend: revTrend,
     },
     {
       label: 'Custo dos Produtos',
       value: cogs,
-      color: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-500/10',
+      color: 'text-amber-400',
+      bg: 'bg-amber-500/10',
       trend: null,
     },
     {
       label: 'Despesas',
       value: totalExpenses,
-      color: 'text-red-500 dark:text-red-400',
-      bg: 'bg-red-50 dark:bg-red-500/10',
+      color: 'text-red-400',
+      bg: 'bg-red-500/10',
       trend: null,
     },
     {
       label: 'Lucro Líquido',
       value: netProfit,
-      color: netProfit >= 0 ? 'text-[#4A6CF7]' : 'text-red-500 dark:text-red-400',
-      bg: netProfit >= 0 ? 'bg-[#4A6CF7]/8' : 'bg-red-50 dark:bg-red-500/10',
+      color: netProfit >= 0 ? 'text-white' : 'text-red-400',
+      bg: netProfit >= 0 ? 'bg-white/8' : 'bg-red-500/10',
       trend: null,
     },
   ]
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MobileMenuButton />
-          <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Financeiro</h1>
-        </div>
-        <button
-          onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4A6CF7] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a5ce5]"
-        >
-          <Plus className="h-4 w-4" /> Nova despesa
-        </button>
-      </div>
+      <PageHeader
+        title="Financeiro"
+        subtitle="Acompanhe receitas, despesas e lucro do mês"
+        action={
+          <button
+            onClick={() => setAddOpen(true)}
+            className="flex h-11 items-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-black hover:bg-white/90"
+          >
+            <Plus className="h-4 w-4" /> Nova despesa
+          </button>
+        }
+      />
 
       {/* Month selector */}
       <div className="relative inline-block">
         <button
           onClick={() => setMonthPickerOpen((o) => !o)}
-          className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
+          className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#141414] px-4 py-2 text-sm font-medium text-neutral-200 shadow-sm hover:bg-white/8"
         >
           {monthLabel}
-          <ChevronDown className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
+          <ChevronDown className="h-4 w-4 text-neutral-500" />
         </button>
         {monthPickerOpen && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMonthPickerOpen(false)} />
-            <div className="absolute left-0 z-20 mt-1 w-48 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
+            <div className="absolute left-0 z-20 mt-1 w-48 overflow-hidden rounded-xl bg-[#141414] shadow-lg ring-1 ring-white/6">
               {MONTH_SHORT.map((m, i) => (
                 <button
                   key={m}
@@ -323,7 +319,7 @@ export default function FinanceiroPage() {
                     setSelMonth(i)
                     setMonthPickerOpen(false)
                   }}
-                  className={`block w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800 ${selMonth === i && selYear === now.getFullYear() ? 'font-semibold text-[#4A6CF7]' : 'text-gray-700 dark:text-neutral-200'}`}
+                  className={`block w-full px-4 py-2 text-left text-sm transition-colors hover:bg-white/8 ${selMonth === i && selYear === now.getFullYear() ? 'font-semibold text-white' : 'text-neutral-200'}`}
                 >
                   {m} {selYear}
                 </button>
@@ -334,18 +330,16 @@ export default function FinanceiroPage() {
       </div>
 
       {/* Inventory investment — independent of month filter */}
-      <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-50 dark:bg-violet-500/10">
-          <Package className="h-5 w-5 text-violet-500 dark:text-violet-400" />
+      <div className="flex items-center gap-4 rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
+          <Package className="h-5 w-5 text-neutral-300" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-gray-400 dark:text-neutral-500">
-            Dinheiro Investido em Estoque
-          </p>
-          <p className="text-xl font-bold text-violet-600 dark:text-violet-400">
+          <p className="text-xs text-neutral-500">Dinheiro Investido em Estoque</p>
+          <p className="text-xl font-bold text-neutral-200">
             {formatCurrency(inventoryInvestment)}
           </p>
-          <p className="mt-0.5 text-[11px] text-gray-400 dark:text-neutral-500">
+          <p className="mt-0.5 text-[11px] text-neutral-500">
             {(productsData?.data ?? []).filter((p) => p.costPrice && p.stock > 0).length} produto(s)
             com custo cadastrado
           </p>
@@ -355,16 +349,13 @@ export default function FinanceiroPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {summaryCards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800"
-          >
-            <p className="text-xs text-gray-400 dark:text-neutral-500">{c.label}</p>
+          <div key={c.label} className="rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+            <p className="text-xs text-neutral-500">{c.label}</p>
             <p className={`mt-1 text-xl font-bold ${c.color}`}>{formatCurrency(c.value)}</p>
             {c.trend !== null && (
               <div className="mt-1.5 flex items-center gap-1">
                 <span
-                  className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${c.trend >= 0 ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}
+                  className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${c.trend >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}
                 >
                   {c.trend >= 0 ? (
                     <TrendingUp className="h-3 w-3" />
@@ -373,54 +364,50 @@ export default function FinanceiroPage() {
                   )}
                   {Math.abs(c.trend).toFixed(1)}%
                 </span>
-                <span className="text-xs text-gray-400 dark:text-neutral-500">vs mês ant.</span>
+                <span className="text-xs text-neutral-500">vs mês ant.</span>
               </div>
             )}
             {c.trend === null && c.label === 'Lucro Líquido' && revenue > 0 && (
-              <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">
-                Margem: {margin.toFixed(1)}%
-              </p>
+              <p className="mt-1 text-xs text-neutral-500">Margem: {margin.toFixed(1)}%</p>
             )}
           </div>
         ))}
       </div>
 
       {/* Lucro bruto breakdown */}
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-neutral-200">
-          Resumo do Mês
-        </h2>
+      <div className="rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+        <h2 className="mb-3 text-sm font-semibold text-neutral-200">Resumo do Mês</h2>
         <div className="space-y-2 text-sm">
           {[
-            { label: 'Receita bruta', value: revenue, cls: 'text-gray-800 dark:text-neutral-100' },
+            { label: 'Receita bruta', value: revenue, cls: 'text-neutral-100' },
             {
               label: '− Custo dos produtos (CMV)',
               value: -cogs,
-              cls: 'text-amber-600 dark:text-amber-400',
+              cls: 'text-amber-400',
             },
             {
               label: '= Lucro bruto',
               value: grossProfit,
-              cls: 'font-semibold text-gray-800 dark:text-neutral-100',
+              cls: 'font-semibold text-neutral-100',
               border: true,
             },
             {
               label: '− Despesas operacionais',
               value: -totalExpenses,
-              cls: 'text-red-500 dark:text-red-400',
+              cls: 'text-red-400',
             },
             {
               label: '= Lucro líquido',
               value: netProfit,
-              cls: `font-bold ${netProfit >= 0 ? 'text-[#4A6CF7]' : 'text-red-500 dark:text-red-400'}`,
+              cls: `font-bold ${netProfit >= 0 ? 'text-white' : 'text-red-400'}`,
               border: true,
             },
           ].map((row) => (
             <div
               key={row.label}
-              className={`flex items-center justify-between py-1.5 ${row.border ? 'border-t border-gray-100 dark:border-neutral-800' : ''}`}
+              className={`flex items-center justify-between py-1.5 ${row.border ? 'border-t border-white/6' : ''}`}
             >
-              <span className="text-gray-500 dark:text-neutral-400">{row.label}</span>
+              <span className="text-neutral-400">{row.label}</span>
               <span className={row.cls}>{formatCurrency(row.value)}</span>
             </div>
           ))}
@@ -429,44 +416,44 @@ export default function FinanceiroPage() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Expenses list */}
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-          <div className="border-b border-gray-100 px-5 py-4 dark:border-neutral-800">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
+        <div className="rounded-3xl bg-[#141414] ring-1 ring-white/6">
+          <div className="border-b border-white/6 px-5 py-4">
+            <h2 className="text-sm font-semibold text-neutral-200">
               Despesas de {MONTH_SHORT[selMonth]}
             </h2>
-            <p className="mt-0.5 text-xs text-gray-400 dark:text-neutral-500">
+            <p className="mt-0.5 text-xs text-neutral-500">
               {expenses.length} lançamento{expenses.length !== 1 ? 's' : ''}
             </p>
           </div>
           {loadingExpenses ? (
             <div className="flex justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-gray-300 dark:text-neutral-600" />
+              <Loader2 className="h-5 w-5 animate-spin text-neutral-600" />
             </div>
           ) : expenses.length === 0 ? (
-            <div className="py-10 text-center text-sm text-gray-300 dark:text-neutral-600">
+            <div className="py-10 text-center text-sm text-neutral-600">
               Nenhuma despesa lançada
             </div>
           ) : (
-            <ul className="divide-y divide-gray-50 dark:divide-neutral-800">
+            <ul className="divide-y divide-white/6">
               {expenses.map((expense) => (
                 <li key={expense.id} className="flex items-center justify-between px-5 py-3.5">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
+                    <p className="truncate text-sm font-medium text-neutral-100">
                       {expense.description}
                     </p>
-                    <p className="text-xs text-gray-400 dark:text-neutral-500">
+                    <p className="text-xs text-neutral-500">
                       {EXPENSE_CATEGORY_LABELS[expense.category]} ·{' '}
                       {new Date(expense.date).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 pl-4">
-                    <span className="text-sm font-semibold text-red-500 dark:text-red-400">
+                    <span className="text-sm font-semibold text-red-400">
                       −{formatCurrency(expense.amount)}
                     </span>
                     <button
                       onClick={() => deleteExpense(expense.id)}
                       disabled={deleting}
-                      className="rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-400 dark:text-neutral-600 dark:hover:bg-red-500/15"
+                      className="rounded-lg p-1.5 text-neutral-600 transition-colors hover:bg-red-500/15 hover:text-red-400"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -478,15 +465,11 @@ export default function FinanceiroPage() {
         </div>
 
         {/* By category */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-neutral-200">
-            Despesas por Categoria
-          </h2>
-          <p className="mb-5 text-xs text-gray-400 dark:text-neutral-500">
-            Total: {formatCurrency(totalExpenses)}
-          </p>
+        <div className="rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6">
+          <h2 className="mb-1 text-sm font-semibold text-neutral-200">Despesas por Categoria</h2>
+          <p className="mb-5 text-xs text-neutral-500">Total: {formatCurrency(totalExpenses)}</p>
           {byCategory.length === 0 ? (
-            <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
+            <div className="flex h-32 items-center justify-center text-sm text-neutral-600">
               Sem despesas
             </div>
           ) : (
@@ -494,16 +477,14 @@ export default function FinanceiroPage() {
               {byCategory.map((c) => (
                 <div key={c.cat}>
                   <div className="mb-1 flex items-center justify-between text-xs">
-                    <span className="font-medium text-gray-700 dark:text-neutral-200">
-                      {c.label}
-                    </span>
-                    <span className="font-semibold text-gray-700 dark:text-neutral-200">
+                    <span className="font-medium text-neutral-200">{c.label}</span>
+                    <span className="font-semibold text-neutral-200">
                       {formatCurrency(c.total)}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/6">
                     <div
-                      className="h-1.5 rounded-full bg-[#4A6CF7]"
+                      className="h-1.5 rounded-full bg-[#141414]"
                       style={{
                         width: `${totalExpenses > 0 ? (c.total / totalExpenses) * 100 : 0}%`,
                       }}

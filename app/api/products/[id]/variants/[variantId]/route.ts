@@ -16,6 +16,7 @@ const updateSchema = z.object({
       })
     )
     .optional(),
+  position: z.number().int().min(0).optional(),
 })
 
 type Params = { params: Promise<{ id: string; variantId: string }> }

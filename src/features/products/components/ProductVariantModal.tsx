@@ -179,21 +179,21 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-background relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl shadow-2xl">
+      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-[#141414] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold text-gray-800">
+            <h2 className="text-base font-semibold text-neutral-100">
               Cores &amp; Tamanhos — {product.name}
             </h2>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-neutral-500">
               {variants.length} {variants.length === 1 ? 'cor' : 'cores'} · {totalStock} peças no
               total
             </p>
           </div>
           <button
             onClick={onClose}
-            className="hover:bg-muted rounded-md p-1.5 text-gray-400 hover:text-gray-600"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-white/8 hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -203,7 +203,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
         <div className="flex-1 space-y-4 overflow-y-auto p-6">
           {loading ? (
             <div className="flex justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+              <Loader2 className="h-6 w-6 animate-spin text-neutral-600" />
             </div>
           ) : (
             <>
@@ -213,7 +213,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                   {variants.map((v) => (
                     <div
                       key={v.id}
-                      className="flex items-start gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4"
+                      className="flex items-start gap-4 rounded-xl border border-white/6 bg-white/4 p-4"
                     >
                       {/* Cor + fotos */}
                       <div className="flex shrink-0 flex-col items-center gap-1.5">
@@ -221,7 +221,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                           className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
                           style={{ backgroundColor: v.colorHex ?? '#ccc' }}
                         />
-                        <p className="max-w-[56px] text-center text-[10px] leading-tight font-semibold text-gray-500">
+                        <p className="max-w-[56px] text-center text-[10px] leading-tight font-semibold text-neutral-400">
                           {v.colorName}
                         </p>
                       </div>
@@ -231,7 +231,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                         {v.images.slice(0, 4).map((img, i) => (
                           <div
                             key={i}
-                            className="relative h-12 w-12 overflow-hidden rounded-lg bg-gray-200"
+                            className="relative h-12 w-12 overflow-hidden rounded-lg bg-white/10"
                           >
                             <Image
                               src={img}
@@ -243,7 +243,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                           </div>
                         ))}
                         {v.images.length > 4 && (
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-200 text-xs font-semibold text-gray-500">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-xs font-semibold text-neutral-400">
                             +{v.images.length - 4}
                           </div>
                         )}
@@ -256,14 +256,14 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                             {v.sizes.map((s) => (
                               <span
                                 key={s.id}
-                                className="rounded-lg border border-gray-200 bg-white px-2 py-0.5 text-xs font-semibold text-gray-700"
+                                className="rounded-lg border border-white/10 bg-[#141414] px-2 py-0.5 text-xs font-semibold text-neutral-200"
                               >
                                 {s.size}: {s.stock}
                               </span>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">sem estoque</span>
+                          <span className="text-xs text-neutral-500">sem estoque</span>
                         )}
                       </div>
 
@@ -271,7 +271,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                       <div className="flex shrink-0 flex-col gap-1">
                         <button
                           onClick={() => openEdit(v)}
-                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-200 hover:text-[#4A6CF7]"
+                          className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-white/15 hover:text-white"
                           title="Editar"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -279,7 +279,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                         <button
                           onClick={() => handleDelete(v.id)}
                           disabled={deletingId === v.id}
-                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
+                          className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-red-500/15 hover:text-red-400 disabled:opacity-40"
                           title="Excluir"
                         >
                           {deletingId === v.id ? (
@@ -298,7 +298,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
               {!showForm && (
                 <button
                   onClick={openCreate}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-3.5 text-sm font-semibold text-gray-500 transition-colors hover:border-[#4A6CF7]/40 hover:text-[#4A6CF7]"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/10 py-3.5 text-sm font-semibold text-neutral-400 transition-colors hover:border-white/40 hover:text-white"
                 >
                   <Plus className="h-4 w-4" />
                   {variants.length === 0 ? 'Adicionar primeira cor' : 'Adicionar outra cor'}
@@ -307,12 +307,12 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
 
               {/* Formulário inline */}
               {showForm && (
-                <div className="space-y-4 rounded-xl border border-[#4A6CF7]/20 bg-[#4A6CF7]/3 p-5">
+                <div className="space-y-4 rounded-xl border border-white/20 bg-white/3 p-5">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-700">
+                    <h3 className="text-sm font-semibold text-neutral-200">
                       {editingId ? 'Editar cor' : 'Nova cor'}
                     </h3>
-                    <button onClick={cancelForm} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={cancelForm} className="text-neutral-500 hover:text-white">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
@@ -320,30 +320,30 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                   {/* Nome + seletor de cor */}
                   <div className="flex gap-3">
                     <div className="flex-1 space-y-1">
-                      <label className="block text-xs font-semibold text-gray-500">
+                      <label className="block text-xs font-semibold text-neutral-400">
                         Nome da cor *
                       </label>
                       <input
                         value={form.colorName}
                         onChange={(e) => setForm((f) => ({ ...f, colorName: e.target.value }))}
                         placeholder="Ex: Azul Royal, Preto, Branco Gelo..."
-                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#4A6CF7] focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none"
+                        className="w-full rounded-xl border border-white/10 bg-[#141414] px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-gray-500">Cor</label>
+                      <label className="block text-xs font-semibold text-neutral-400">Cor</label>
                       <input
                         type="color"
                         value={form.colorHex}
                         onChange={(e) => setForm((f) => ({ ...f, colorHex: e.target.value }))}
-                        className="h-[38px] w-14 cursor-pointer rounded-xl border border-gray-200 bg-white p-1"
+                        className="h-[38px] w-14 cursor-pointer rounded-xl border border-white/10 bg-[#141414] p-1"
                       />
                     </div>
                   </div>
 
                   {/* Fotos */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-gray-500">
+                    <label className="block text-xs font-semibold text-neutral-400">
                       Fotos desta cor *
                     </label>
                     {form.images.length > 0 && (
@@ -355,7 +355,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                             onDragStart={() => onDragStart(i)}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={() => onDrop(i)}
-                            className="group relative h-16 w-16 cursor-grab overflow-hidden rounded-lg border border-gray-200 active:cursor-grabbing"
+                            className="group relative h-16 w-16 cursor-grab overflow-hidden rounded-lg border border-white/10 active:cursor-grabbing"
                           >
                             <Image
                               src={src}
@@ -386,10 +386,10 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                         e.preventDefault()
                         handleFiles(e.dataTransfer.files)
                       }}
-                      className="flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-4 text-center transition-colors hover:border-[#4A6CF7]/50 hover:bg-[#4A6CF7]/4"
+                      className="flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed border-white/10 bg-white/4 px-4 py-4 text-center transition-colors hover:border-white/40 hover:bg-white/4"
                     >
-                      <ImagePlus className="h-5 w-5 text-gray-400" />
-                      <p className="text-xs font-medium text-gray-500">
+                      <ImagePlus className="h-5 w-5 text-neutral-500" />
+                      <p className="text-xs font-medium text-neutral-400">
                         Clique ou arraste as fotos
                       </p>
                     </button>
@@ -405,7 +405,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
 
                   {/* Tamanhos e estoque */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-gray-500">
+                    <label className="block text-xs font-semibold text-neutral-400">
                       {product.category.sizeSet === 'UNIQUE'
                         ? 'Estoque desta cor'
                         : 'Estoque por tamanho'}
@@ -413,7 +413,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                     <div className="flex flex-wrap gap-2">
                       {activeSizes.map((size) => (
                         <div key={size} className="w-16 space-y-1 text-center">
-                          <span className="block text-xs font-bold text-gray-600">
+                          <span className="block text-xs font-bold text-neutral-300">
                             {product.category.sizeSet === 'UNIQUE' ? 'Qtd' : size}
                           </span>
                           <input
@@ -430,23 +430,23 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                                 },
                               }))
                             }
-                            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-2 text-center text-sm font-semibold text-gray-700 focus:border-[#4A6CF7] focus:ring-1 focus:ring-[#4A6CF7]/30 focus:outline-none"
+                            className="w-full rounded-xl border border-white/10 bg-[#141414] px-2 py-2 text-center text-sm font-semibold text-neutral-200 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none"
                           />
                         </div>
                       ))}
                     </div>
-                    <p className="text-[11px] text-gray-400">
+                    <p className="text-[11px] text-neutral-500">
                       Total desta cor: {Object.values(form.sizes).reduce((a, b) => a + b, 0)} peças
                     </p>
                   </div>
 
-                  {error && <p className="text-xs text-red-500">{error}</p>}
+                  {error && <p className="text-xs text-red-400">{error}</p>}
 
                   <div className="flex gap-2 pt-1">
                     <button
                       type="button"
                       onClick={cancelForm}
-                      className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-50"
+                      className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-semibold text-neutral-400 transition-colors hover:bg-white/8"
                     >
                       Cancelar
                     </button>
@@ -454,7 +454,7 @@ export function ProductVariantModal({ product, onClose }: ProductVariantModalPro
                       type="button"
                       onClick={handleSave}
                       disabled={saving}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#4A6CF7] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#3a5ce5] disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white py-2.5 text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50"
                     >
                       {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                       {editingId ? 'Salvar alterações' : 'Adicionar cor'}

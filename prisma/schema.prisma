@@ -116,6 +116,7 @@ model ProductVariant {
   colorHex  String?
   images    String[]
   barcode   String?            @unique
+  position  Int                @default(0)
   sizes     VariantSizeStock[]
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt

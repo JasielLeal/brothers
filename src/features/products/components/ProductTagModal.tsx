@@ -190,16 +190,16 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-[#141414] shadow-2xl">
         {/* header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-white/6 px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold text-gray-800">Etiqueta do Produto</h2>
-            <p className="mt-0.5 max-w-xs truncate text-xs text-gray-400">{product.name}</p>
+            <h2 className="text-base font-semibold text-neutral-100">Etiqueta do Produto</h2>
+            <p className="mt-0.5 max-w-xs truncate text-xs text-neutral-500">{product.name}</p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-lg p-1.5 text-neutral-500 hover:bg-white/10 hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -207,14 +207,14 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
 
         {/* ── Seleção de cor/tamanho para baixa de estoque ── */}
         {variants.length > 0 && (
-          <div className="space-y-3 border-b border-gray-100 bg-gray-50/60 px-6 py-4">
-            <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+          <div className="space-y-3 border-b border-white/6 bg-white/4 px-6 py-4">
+            <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Selecione para dar baixa no estoque ao imprimir
             </p>
 
             {/* Cores */}
             <div className="space-y-1.5">
-              <p className="text-xs text-gray-400">Cor</p>
+              <p className="text-xs text-neutral-500">Cor</p>
               <div className="flex flex-wrap gap-2">
                 {variants.map((v) => (
                   <button
@@ -224,12 +224,12 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
                     title={v.colorName}
                     className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
                       selectedVariant?.id === v.id
-                        ? 'border-[#4A6CF7] bg-[#4A6CF7]/10 text-[#4A6CF7]'
-                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                        ? 'border-white/40 bg-white/10 text-white'
+                        : 'border-white/10 bg-white/4 text-neutral-400 hover:border-white/20'
                     }`}
                   >
                     <div
-                      className="h-3 w-3 rounded-full border border-gray-300"
+                      className="h-3 w-3 rounded-full border border-white/15"
                       style={{ backgroundColor: v.colorHex ?? '#888' }}
                     />
                     {v.colorName}
@@ -241,7 +241,7 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
             {/* Tamanhos */}
             {selectedVariant && !isUniqueSize && (
               <div className="space-y-1.5">
-                <p className="text-xs text-gray-400">Tamanho</p>
+                <p className="text-xs text-neutral-500">Tamanho</p>
                 {availableSizes.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {availableSizes.map((s) => (
@@ -251,8 +251,8 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
                         onClick={() => setSelectedSize(s)}
                         className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all ${
                           selectedSize === s
-                            ? 'border-[#4A6CF7] bg-[#4A6CF7] text-white'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                            ? 'border-white bg-white text-black'
+                            : 'border-white/10 bg-white/4 text-neutral-400 hover:border-white/20'
                         }`}
                       >
                         {s}
@@ -272,9 +272,9 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
         <div className="flex-1 overflow-auto p-6">
           {activeBarcode ? (
             <>
-              <p className="mb-4 text-center text-xs text-gray-400">
+              <p className="mb-4 text-center text-xs text-neutral-500">
                 Cód. de barras ({selectedVariant?.colorName}):{' '}
-                <span className="font-mono font-semibold text-gray-600">{activeBarcode}</span>
+                <span className="font-mono font-semibold text-neutral-300">{activeBarcode}</span>
               </p>
 
               <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-200 p-5">
@@ -422,12 +422,12 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
                 </div>
               </div>
 
-              <p className="mt-3 text-center text-[11px] text-gray-400">
+              <p className="mt-3 text-center text-[11px] text-neutral-500">
                 Imprima, recorte e coloque na peça · Barras em preto no PDF para escaneamento
               </p>
             </>
           ) : (
-            <div className="flex h-40 items-center justify-center text-center text-sm text-gray-400">
+            <div className="flex h-40 items-center justify-center text-center text-sm text-neutral-500">
               {variants.length === 0
                 ? 'Carregando variantes...'
                 : 'Selecione uma cor para ver o código de barras.'}
@@ -436,17 +436,17 @@ export function ProductTagModal({ product, onClose }: ProductTagModalProps) {
         </div>
 
         {/* footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-white/6 px-6 py-4">
           <button
             onClick={onClose}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/8"
           >
             Fechar
           </button>
           <button
             onClick={handleExport}
             disabled={exporting || !activeBarcode || !barcodeReady}
-            className="flex items-center gap-2 rounded-lg bg-[#4A6CF7] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3a5ce6] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-200 disabled:opacity-50"
           >
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

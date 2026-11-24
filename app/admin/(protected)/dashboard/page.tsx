@@ -1,17 +1,28 @@
 'use client'
 
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import logo from '@/../public/logo.png'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
-import {
-  useProducts,
-  useStockByCategory,
-  useStockByType,
-} from '@/features/products/hooks/useProducts'
+import { useProducts, useStockByCategory } from '@/features/products/hooks/useProducts'
 import { useOrders } from '@/features/orders/hooks/useOrders'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { TrendingUp, TrendingDown, ChevronDown, AlertTriangle } from 'lucide-react'
-import type { StockByCategory, StockByType } from '@/features/products/types/product.types'
+import {
+  TrendingUp,
+  TrendingDown,
+  ChevronDown,
+  Search,
+  Plus,
+  ShoppingBag,
+  Clock,
+  Package,
+  AlertTriangle,
+  ArrowUpRight,
+  ArrowDownRight,
+  MoreHorizontal,
+} from 'lucide-react'
 
 const MONTH_NAMES = [
   'Jan',
@@ -28,85 +39,106 @@ const MONTH_NAMES = [
   'Dez',
 ]
 
-/* ── BarChart (receita por dia do mês selecionado) ─────── */
-function BarChart({
-  curData,
-  prevData,
-}: {
-  curData: { day: number; revenue: number }[]
-  prevData: { day: number; revenue: number }[]
-}) {
-  const maxVal = Math.max(...curData.map((d) => d.revenue), ...prevData.map((d) => d.revenue), 1)
-  const H = 130
-  const barW = 6
-  const gap = 2
-  const groupW = barW * 2 + gap + 10
-  const totalW = curData.length * groupW
+const PANEL = 'rounded-3xl bg-[#141414] p-5 ring-1 ring-white/6'
+const ROW = 'rounded-2xl bg-white/4'
+
+/* ── AreaChart suave (receita por dia) ─────────────────── */
+function AreaChart({ data }: { data: { day: number; revenue: number }[] }) {
+  const [hover, setHover] = useState<number | null>(null)
+  const W = 300
+  const H = 140
+  const max = Math.max(...data.map((d) => d.revenue), 1)
+  const pts = data.map((d, i) => ({
+    x: (i / Math.max(data.length - 1, 1)) * W,
+    y: H - 12 - (d.revenue / max) * (H - 36),
+  }))
+  const line = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M${p.x},${p.y}`
+    const prev = pts[i - 1]
+    const cx = (prev.x + p.x) / 2
+    return `${acc} C${cx},${prev.y} ${cx},${p.y} ${p.x},${p.y}`
+  }, '')
+  const area = `${line} L${W},${H} L0,${H} Z`
+  const h = hover !== null ? pts[hover] : null
 
   return (
-    <svg viewBox={`0 0 ${totalW} ${H + 18}`} className="w-full" preserveAspectRatio="none">
-      {curData.map((d, i) => {
-        const x = i * groupW + 2
-        const curH = (d.revenue / maxVal) * H
-        const prevH = ((prevData[i]?.revenue ?? 0) / maxVal) * H
-        return (
-          <g key={i}>
-            <rect x={x} y={H - curH} width={barW} height={curH} rx="3" fill="#4A6CF7" />
-            <rect
-              x={x + barW + gap}
-              y={H - prevH}
-              width={barW}
-              height={prevH}
-              rx="3"
-              fill="#E2E8F0"
-            />
-            <text x={x + barW + gap / 2} y={H + 14} textAnchor="middle" fontSize="8" fill="#94A3B8">
-              {d.day}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
+    <div className="relative pt-8">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-40 w-full"
+        preserveAspectRatio="none"
+        onMouseLeave={() => setHover(null)}
+        onMouseMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect()
+          const i = Math.round(((e.clientX - r.left) / r.width) * (data.length - 1))
+          setHover(Math.min(Math.max(i, 0), data.length - 1))
+        }}
+      >
+        <defs>
+          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#areaFill)" />
+        <path
+          d={line}
+          fill="none"
+          stroke="#fff"
+          strokeWidth="1.5"
+          vectorEffect="non-scaling-stroke"
+        />
+        {h && (
+          <line
+            x1={h.x}
+            x2={h.x}
+            y1={0}
+            y2={H}
+            stroke="#fff"
+            strokeOpacity="0.5"
+            strokeDasharray="3 3"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
+      {h && hover !== null && (
+        <div
+          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-xl bg-black px-3 py-1.5 text-center ring-1 ring-white/20"
+          style={{ left: `${(h.x / W) * 100}%` }}
+        >
+          <p className="text-[10px] text-neutral-400">Dia {data[hover].day}</p>
+          <p className="text-xs font-semibold text-white">{formatCurrency(data[hover].revenue)}</p>
+        </div>
+      )}
+    </div>
   )
 }
 
 /* ── LineChart (pedidos semanais) ──────────────────────── */
 function LineChart({ curData, prevData }: { curData: number[]; prevData: number[] }) {
   const W = 280
-  const H = 80
+  const H = 70
   const maxVal = Math.max(...curData, ...prevData, 1)
-
   const toPoints = (arr: number[]) =>
     arr
-      .map((v, i) => {
-        const x = (i / Math.max(arr.length - 1, 1)) * W
-        const y = H - (v / maxVal) * (H - 8)
-        return `${x.toFixed(1)},${y.toFixed(1)}`
-      })
+      .map(
+        (v, i) =>
+          `${((i / Math.max(arr.length - 1, 1)) * W).toFixed(1)},${(H - (v / maxVal) * (H - 8)).toFixed(1)}`
+      )
       .join(' ')
-
-  const areaPoints = curData
-    .map((v, i) => {
-      const x = (i / Math.max(curData.length - 1, 1)) * W
-      const y = H - (v / maxVal) * (H - 8)
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
-
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none">
-      <polygon points={`0,${H} ${areaPoints} ${W},${H}`} fill="#4A6CF7" fillOpacity="0.07" />
       <polyline
         points={toPoints(prevData)}
         fill="none"
-        stroke="#E2E8F0"
+        stroke="#3A3A3A"
         strokeWidth="2"
         strokeLinejoin="round"
       />
       <polyline
         points={toPoints(curData)}
         fill="none"
-        stroke="#4A6CF7"
+        stroke="#fff"
         strokeWidth="2.5"
         strokeLinejoin="round"
       />
@@ -114,107 +146,37 @@ function LineChart({ curData, prevData }: { curData: number[]; prevData: number[
   )
 }
 
-/* ── SlideCarousel ─────────────────────────────────────── */
-function SlideCarousel({ children }: { children: React.ReactNode[] }) {
-  const items = [children[children.length - 1], ...children, children[0]]
-  const [idx, setIdx] = useState(1)
-  const [transitioning, setTransitioning] = useState(true)
-  const startX = useRef<number | null>(null)
-
-  useEffect(() => {
-    if (!transitioning) return
-    if (idx === 0) {
-      const t = setTimeout(() => {
-        setTransitioning(false)
-        setIdx(children.length)
-      }, 300)
-      return () => clearTimeout(t)
-    }
-    if (idx === items.length - 1) {
-      const t = setTimeout(() => {
-        setTransitioning(false)
-        setIdx(1)
-      }, 300)
-      return () => clearTimeout(t)
-    }
-  }, [idx, transitioning, items.length, children.length])
-
-  useEffect(() => {
-    if (!transitioning) {
-      const t = requestAnimationFrame(() => setTransitioning(true))
-      return () => cancelAnimationFrame(t)
-    }
-  }, [transitioning])
-
-  const realIdx = idx === 0 ? children.length - 1 : idx === items.length - 1 ? 0 : idx - 1
-
+function TrendPill({ value, up }: { value: number; up: boolean }) {
   return (
-    <div className="lg:hidden">
-      <div
-        className="overflow-hidden"
-        onTouchStart={(e) => {
-          startX.current = e.touches[0].clientX
-        }}
-        onTouchEnd={(e) => {
-          if (startX.current === null) return
-          const dx = startX.current - e.changedTouches[0].clientX
-          if (Math.abs(dx) > 40) {
-            setTransitioning(true)
-            setIdx((i) => i + (dx > 0 ? 1 : -1))
-          }
-          startX.current = null
-        }}
-      >
-        <div
-          className="flex"
-          style={{
-            transform: `translateX(-${idx * 100}%)`,
-            transition: transitioning ? 'transform 300ms ease' : 'none',
-          }}
-        >
-          {items.map((child, i) => (
-            <div key={i} className="w-full shrink-0">
-              {child}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-2 flex justify-center gap-1.5">
-        {children.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              setTransitioning(true)
-              setIdx(i + 1)
-            }}
-            className={`h-1.5 rounded-full transition-all ${i === realIdx ? 'w-4 bg-[#4A6CF7]' : 'w-1.5 bg-gray-200 dark:bg-neutral-700'}`}
-          />
-        ))}
-      </div>
-    </div>
+    <span
+      className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${up ? 'bg-white text-black' : 'bg-white/10 text-neutral-300'}`}
+    >
+      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {Math.abs(value).toFixed(1)}%
+    </span>
   )
 }
 
 /* ── page ──────────────────────────────────────────────── */
 export default function DashboardPage() {
+  const { data: session } = useSession()
   const { data: productsData } = useProducts({ limit: 100 })
   const { data: ordersData } = useOrders({ limit: 1000 })
   const { data: stockByCategory = [] } = useStockByCategory()
-  const { data: stockByType = [] } = useStockByType()
+  const [search, setSearch] = useState('')
 
-  const orders = ordersData?.data ?? []
-  const confirmedOrders = orders.filter((o) => o.status === 'DELIVERED')
+  const orders = useMemo(() => ordersData?.data ?? [], [ordersData])
+  const confirmedOrders = useMemo(() => orders.filter((o) => o.status === 'DELIVERED'), [orders])
+  const products = useMemo(() => productsData?.data ?? [], [productsData])
 
   const investedValue = useMemo(
-    () => (productsData?.data ?? []).reduce((sum, p) => sum + (p.costPrice ?? 0) * p.stock, 0),
-    [productsData]
+    () => products.reduce((sum, p) => sum + (p.costPrice ?? 0) * p.stock, 0),
+    [products]
   )
-
   const stockSaleValue = useMemo(
-    () => (productsData?.data ?? []).reduce((sum, p) => sum + p.price * p.stock, 0),
-    [productsData]
+    () => products.reduce((sum, p) => sum + p.price * p.stock, 0),
+    [products]
   )
-
   const totalSales = useMemo(
     () => confirmedOrders.reduce((sum, o) => sum + o.total, 0),
     [confirmedOrders]
@@ -242,21 +204,15 @@ export default function DashboardPage() {
     setSelectedMonth(availableMonths[0])
   }
 
-  const selectedMonthParts = selectedMonth.split('-').map(Number)
-  const selYear = selectedMonthParts[0]
-  const selMonth = selectedMonthParts[1]
+  const [selYear, selMonth] = selectedMonth.split('-').map(Number)
 
   // ── Revenue per day (selected month) ──────────────────
-  const { curRevenueByDay, prevRevenueByDay, totalRevenue, prevTotalRevenue } = useMemo(() => {
+  const { curRevenueByDay, totalRevenue, prevTotalRevenue } = useMemo(() => {
     const daysInSel = new Date(selYear, selMonth + 1, 0).getDate()
-
     const prevMonth = selMonth === 0 ? 11 : selMonth - 1
     const prevYear = selMonth === 0 ? selYear - 1 : selYear
-    const daysInPrev = new Date(prevYear, prevMonth + 1, 0).getDate()
 
     const cur = Array.from({ length: daysInSel }, (_, i) => ({ day: i + 1, revenue: 0 }))
-    const prev = Array.from({ length: daysInPrev }, (_, i) => ({ day: i + 1, revenue: 0 }))
-
     let totalRevenue = 0
     let prevTotalRevenue = 0
 
@@ -270,16 +226,12 @@ export default function DashboardPage() {
         }
       }
       if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
-        const idx = d.getDate() - 1
-        if (idx < prev.length) {
-          prev[idx].revenue += o.total
-          prevTotalRevenue += o.total
-        }
+        prevTotalRevenue += o.total
       }
     })
 
-    return { curRevenueByDay: cur, prevRevenueByDay: prev, totalRevenue, prevTotalRevenue }
-  }, [confirmedOrders, selectedMonth, selYear, selMonth])
+    return { curRevenueByDay: cur, totalRevenue, prevTotalRevenue }
+  }, [confirmedOrders, selYear, selMonth])
 
   const revenueTrend =
     prevTotalRevenue > 0 ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100 : null
@@ -290,556 +242,347 @@ export default function DashboardPage() {
     confirmedOrders.forEach((o) => {
       o.items.forEach((item) => {
         const key = item.productId ?? item.productName
-        const e = counts.get(key) ?? {
-          count: 0,
-          name: item.productName,
-          productId: item.productId,
-        }
+        const e = counts.get(key) ?? { count: 0, name: item.productName, productId: item.productId }
         e.count += item.quantity
         counts.set(key, e)
       })
     })
-    const ranked = Array.from(counts.values())
+    return Array.from(counts.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, 4)
-    return ranked.map((tp) => {
-      const product = productsData?.data.find((p) => p.id === tp.productId)
-      return { ...tp, image: product?.images[0] ?? null, price: product?.price ?? 0 }
-    })
-  }, [confirmedOrders, productsData])
+      .map((tp) => {
+        const product = products.find((p) => p.id === tp.productId)
+        return { ...tp, image: product?.images[0] ?? null, price: product?.price ?? 0 }
+      })
+  }, [confirmedOrders, products])
 
-  // fallback: se não há pedidos, mostrar featured products
+  // fallback: se não há pedidos, mostrar os primeiros produtos
   const displayTopProducts = useMemo(() => {
     if (topProducts.length > 0) return topProducts
-    return (productsData?.data ?? []).slice(0, 4).map((p) => ({
+    return products.slice(0, 4).map((p) => ({
       productId: p.id,
       name: p.name,
       count: 0,
       image: p.images[0] ?? null,
       price: p.price,
     }))
-  }, [topProducts, productsData])
-
-  // ── Categories (por unidades vendidas em pedidos confirmados) ─
-  const categoryStats = useMemo(() => {
-    const cats = new Map<string, { name: string; count: number }>()
-    confirmedOrders.forEach((o) => {
-      o.items.forEach((item) => {
-        const product = productsData?.data.find((p) => p.id === item.productId)
-        if (!product) return
-        const e = cats.get(product.categoryId) ?? { name: product.category.name, count: 0 }
-        e.count += item.quantity
-        cats.set(product.categoryId, e)
-      })
-    })
-    const colors = ['#4A6CF7', '#F5A623', '#4BC9C8', '#22C55E', '#EF4444']
-    return Array.from(cats.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3)
-      .map((c, i) => ({ ...c, color: colors[i] }))
-  }, [confirmedOrders, productsData])
+  }, [topProducts, products])
 
   // ── Weekly orders (last 7 days vs prev 7 days) ─────────
-  const { weekCur, weekPrev, weekTotalCur, weekTotalPrev } = useMemo(() => {
+  const todayStr = now.toDateString()
+  const { weekCur, weekPrev, weekTotalCur, weekTotalPrev, weekLabel } = useMemo(() => {
+    const today = new Date(todayStr)
     const cur: number[] = []
     const prev: number[] = []
     for (let i = 6; i >= 0; i--) {
-      const day = new Date(now)
-      day.setDate(now.getDate() - i)
+      const day = new Date(today)
+      day.setDate(today.getDate() - i)
       const dayStr = day.toISOString().slice(0, 10)
-
       const prevDay = new Date(day)
       prevDay.setDate(day.getDate() - 7)
       const prevDayStr = prevDay.toISOString().slice(0, 10)
-
       cur.push(confirmedOrders.filter((o) => o.createdAt.slice(0, 10) === dayStr).length)
       prev.push(confirmedOrders.filter((o) => o.createdAt.slice(0, 10) === prevDayStr).length)
     }
-    const weekTotalCur = cur.reduce((s, v) => s + v, 0)
-    const weekTotalPrev = prev.reduce((s, v) => s + v, 0)
-    return { weekCur: cur, weekPrev: prev, weekTotalCur, weekTotalPrev }
-  }, [confirmedOrders, now])
+    const start = new Date(today)
+    start.setDate(today.getDate() - 6)
+    return {
+      weekCur: cur,
+      weekPrev: prev,
+      weekTotalCur: cur.reduce((s, v) => s + v, 0),
+      weekTotalPrev: prev.reduce((s, v) => s + v, 0),
+      weekLabel: `${MONTH_NAMES[start.getMonth()]} ${start.getDate()}–${MONTH_NAMES[today.getMonth()]} ${today.getDate()}`,
+    }
+  }, [confirmedOrders, todayStr])
 
   const weekTrend =
     weekTotalPrev > 0 ? ((weekTotalCur - weekTotalPrev) / weekTotalPrev) * 100 : null
   const weekTrendUp = weekTrend === null || weekTrend >= 0
 
-  const monthLabel = `${MONTH_NAMES[selMonth]} ${selYear}`
-  const rangeLabel = `${MONTH_NAMES[selMonth]} ${selYear}`
-
-  const weekLabel = `${MONTH_NAMES[now.getMonth()]} ${now.getDate() - 6}–${now.getDate()}`
-
-  // ── Month picker label ──────────────────────────────────
   function monthKeyToLabel(key: string) {
     const [y, m] = key.split('-').map(Number)
     return `${MONTH_NAMES[m]} ${y}`
   }
 
+  // ── Derived for new layout ─────────────────────────────
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin'
+  const pendingOrders = orders.filter(
+    (o) => o.status === 'PENDING' || o.status === 'PROCESSING'
+  ).length
+  const activeProducts = useMemo(() => products.filter((p) => p.isActive), [products])
+  const lowCategories = stockByCategory.filter((c) => c.isLow).length
+
+  const tableProducts = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return [...activeProducts]
+      .filter(
+        (p) => !q || p.name.toLowerCase().includes(q) || p.category.name.toLowerCase().includes(q)
+      )
+      .sort((a, b) => a.stock - b.stock)
+      .slice(0, 6)
+  }, [activeProducts, search])
+
+  const stats = [
+    { label: 'Pedidos confirmados', value: confirmedOrders.length, icon: ShoppingBag },
+    { label: 'Pedidos pendentes', value: pendingOrders, icon: Clock },
+    { label: 'Produtos ativos', value: activeProducts.length, icon: Package },
+    { label: 'Categorias com estoque baixo', value: lowCategories, icon: AlertTriangle },
+  ]
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center">
+      {/* top bar */}
+      <div className="flex items-center gap-3">
         <MobileMenuButton />
-        <h1 className="text-xl font-bold text-gray-800 dark:text-neutral-100">Dashboard</h1>
+        <Image src={logo} alt="Brothers Outlet" className="h-8 w-auto shrink-0" priority />
+        <div className="flex h-11 flex-1 items-center gap-2 rounded-full bg-[#141414] px-4 ring-1 ring-white/6">
+          <Search className="h-4 w-4 text-neutral-500" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar produto ou categoria"
+            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-neutral-500"
+          />
+        </div>
+        <Link
+          href="/admin/products"
+          className="hidden h-11 items-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-black transition-opacity hover:opacity-90 sm:flex"
+        >
+          <Plus className="h-4 w-4" /> Novo Produto
+        </Link>
       </div>
 
-      {/* ── top row ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-        {/* Receita */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 xl:col-span-3 dark:bg-neutral-900 dark:ring-neutral-800">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Receita</h2>
-            {/* Month picker */}
-            <div className="relative">
-              <button
-                onClick={() => setMonthPickerOpen((o) => !o)}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-              >
-                {monthKeyToLabel(selectedMonth)}
-                <ChevronDown className="h-3 w-3 text-gray-400 dark:text-neutral-500" />
-              </button>
-              {monthPickerOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setMonthPickerOpen(false)} />
-                  <div className="absolute right-0 z-20 mt-1 min-w-32 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-                    {availableMonths.map((key) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setSelectedMonth(key)
-                          setMonthPickerOpen(false)
-                        }}
-                        className={`block w-full px-4 py-2 text-left text-xs transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800 ${selectedMonth === key ? 'font-semibold text-[#4A6CF7]' : 'text-gray-600 dark:text-neutral-300'}`}
-                      >
-                        {monthKeyToLabel(key)}
-                      </button>
-                    ))}
+      <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[1fr_20rem]">
+        {/* ── main column ─────────────────────────────── */}
+        <div className="min-w-0 space-y-5">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-white">Olá, {firstName}</h1>
+            <p className="mt-1 text-sm text-neutral-500">Veja como está a loja hoje</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 lg:col-span-2">
+              {stats.map(({ label, value, icon: Icon }) => (
+                <div
+                  key={label}
+                  className="flex flex-col justify-between rounded-3xl bg-[#141414] p-4 ring-1 ring-white/6"
+                >
+                  <div className="flex items-center justify-between">
+                    <Icon className="h-4 w-4 text-neutral-400" />
+                    <MoreHorizontal className="h-4 w-4 text-neutral-700" />
                   </div>
-                </>
+                  <p className="mt-6 text-xs leading-tight text-neutral-500">{label}</p>
+                  <p className="text-4xl font-semibold tracking-tight text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Receita */}
+            <div className={`${PANEL} lg:col-span-3`}>
+              <div className="mb-1 flex items-center justify-between">
+                <h2 className="text-sm font-medium text-neutral-400">Receita mensal</h2>
+                <div className="relative">
+                  <button
+                    onClick={() => setMonthPickerOpen((o) => !o)}
+                    className="flex items-center gap-1 rounded-full border border-white/12 px-3 py-1 text-xs text-neutral-300 hover:bg-white/8"
+                  >
+                    {monthKeyToLabel(selectedMonth)}
+                    <ChevronDown className="h-3 w-3 text-neutral-500" />
+                  </button>
+                  {monthPickerOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setMonthPickerOpen(false)}
+                      />
+                      <div className="absolute right-0 z-20 mt-1 min-w-32 overflow-hidden rounded-2xl bg-[#1a1a1a] shadow-lg ring-1 ring-white/10">
+                        {availableMonths.map((key) => (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              setSelectedMonth(key)
+                              setMonthPickerOpen(false)
+                            }}
+                            className={`block w-full px-4 py-2 text-left text-xs hover:bg-white/8 ${selectedMonth === key ? 'font-semibold text-white' : 'text-neutral-400'}`}
+                          >
+                            {monthKeyToLabel(key)}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-3xl font-semibold tracking-tight text-white">
+                  {formatCurrency(totalRevenue)}
+                </p>
+                {revenueTrend !== null && <TrendPill value={revenueTrend} up={revenueTrend >= 0} />}
+              </div>
+              <AreaChart data={curRevenueByDay} />
+              <div className="mt-2 flex justify-between text-[10px] text-neutral-600">
+                <span>Dia 1</span>
+                <span>Dia {curRevenueByDay.length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabela */}
+          <div className={PANEL}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-400">Menor estoque primeiro</h2>
+              <Link href="/admin/products" className="text-xs text-neutral-400 hover:text-white">
+                Ver todos
+              </Link>
+            </div>
+            <div className="grid grid-cols-[1fr_5rem_4rem_5rem] gap-3 px-3 pb-2 text-[11px] tracking-wide text-neutral-600 uppercase sm:grid-cols-[1fr_8rem_5rem_4rem_5rem]">
+              <span>Produto</span>
+              <span className="hidden sm:block">Categoria</span>
+              <span>Preço</span>
+              <span>Estoque</span>
+              <span />
+            </div>
+            <div className="space-y-2">
+              {tableProducts.length === 0 && (
+                <p className="py-8 text-center text-sm text-neutral-600">
+                  Nenhum produto encontrado
+                </p>
+              )}
+              {tableProducts.map((p) => {
+                const low = p.stock <= 5
+                return (
+                  <div
+                    key={p.id}
+                    className={`${ROW} grid grid-cols-[1fr_5rem_4rem_5rem] items-center gap-3 px-3 py-2.5 sm:grid-cols-[1fr_8rem_5rem_4rem_5rem]`}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-neutral-800">
+                        {p.images[0] && (
+                          <Image
+                            src={p.images[0]}
+                            alt=""
+                            fill
+                            sizes="36px"
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+                      <span className="truncate text-sm font-medium text-white">{p.name}</span>
+                    </div>
+                    <span className="hidden truncate text-xs text-neutral-400 sm:block">
+                      {p.category.name}
+                    </span>
+                    <span className="text-xs text-neutral-300">{formatCurrency(p.price)}</span>
+                    <span
+                      className={`text-xs font-semibold ${low ? 'text-red-400' : 'text-neutral-200'}`}
+                    >
+                      {p.stock}
+                    </span>
+                    <Link
+                      href="/admin/products"
+                      className={`rounded-full px-3 py-1.5 text-center text-xs font-semibold ${low ? 'bg-white text-black' : 'bg-white/10 text-neutral-300'}`}
+                    >
+                      {low ? 'Repor' : 'Ver'}
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ── right column ────────────────────────────── */}
+        <aside className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-1 2xl:content-start">
+          <div className="rounded-3xl bg-white p-5 text-black">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-600">Total de Vendas</h2>
+              <ArrowUpRight className="h-4 w-4 text-neutral-400" />
+            </div>
+            <p className="mt-4 text-4xl font-semibold tracking-tight">
+              {formatCurrency(totalSales)}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              {confirmedOrders.length} pedido{confirmedOrders.length !== 1 ? 's' : ''} confirmado
+              {confirmedOrders.length !== 1 ? 's' : ''}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-black/10 pt-3">
+              <div>
+                <p className="text-[11px] text-neutral-500">Valor investido</p>
+                <p className="text-sm font-semibold">{formatCurrency(investedValue)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-neutral-500">Valor de venda</p>
+                <p className="text-sm font-semibold">{formatCurrency(stockSaleValue)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className={PANEL}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-400">Pedidos · 7 dias</h2>
+              {weekTrend !== null && <TrendPill value={weekTrend} up={weekTrendUp} />}
+            </div>
+            <p className="text-3xl font-semibold tracking-tight text-white">{weekTotalCur}</p>
+            <p className="mb-3 text-xs text-neutral-500">{weekLabel}</p>
+            <LineChart curData={weekCur} prevData={weekPrev} />
+          </div>
+
+          <div className={PANEL}>
+            <h2 className="mb-3 text-sm font-medium text-neutral-400">Mais vendidos</h2>
+            <div className="space-y-2">
+              {displayTopProducts.length === 0 && (
+                <p className="py-4 text-center text-sm text-neutral-600">Sem vendas ainda</p>
+              )}
+              {displayTopProducts.map((p) => (
+                <div key={p.productId ?? p.name} className={`${ROW} flex items-center gap-3 p-2.5`}>
+                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-neutral-800">
+                    {p.image && (
+                      <Image src={p.image} alt="" fill sizes="36px" className="object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-white">{p.name}</p>
+                    <p className="text-[11px] text-neutral-500">
+                      {p.count > 0
+                        ? `${p.count} vendido${p.count !== 1 ? 's' : ''}`
+                        : formatCurrency(p.price)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={PANEL}>
+            <h2 className="mb-3 text-sm font-medium text-neutral-400">Estoque por categoria</h2>
+            <div className="space-y-2">
+              {[...stockByCategory]
+                .sort((a, b) => Number(b.isLow) - Number(a.isLow) || a.totalStock - b.totalStock)
+                .slice(0, 5)
+                .map((c) => (
+                  <div key={c.id} className={`${ROW} flex items-center gap-3 p-2.5`}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-white">{c.name}</p>
+                      <p className="text-[11px] text-neutral-500">{c.totalStock} unidades</p>
+                    </div>
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-full ${c.isLow ? 'bg-red-500/15 text-red-400' : 'bg-white/10 text-white'}`}
+                    >
+                      {c.isLow ? (
+                        <ArrowDownRight className="h-3.5 w-3.5" />
+                      ) : (
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                  </div>
+                ))}
+              {stockByCategory.length === 0 && (
+                <p className="py-4 text-center text-sm text-neutral-600">Sem categorias</p>
               )}
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {formatCurrency(totalRevenue)}
-          </p>
-          <div className="mt-1.5 mb-3 flex items-center gap-2">
-            {revenueTrend !== null ? (
-              <span
-                className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${revenueTrend >= 0 ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}
-              >
-                {revenueTrend >= 0 ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
-                {Math.abs(revenueTrend).toFixed(1)}%
-              </span>
-            ) : (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400 dark:bg-neutral-800 dark:text-neutral-500">
-                —
-              </span>
-            )}
-            <span className="text-xs text-gray-400 dark:text-neutral-500">vs mês anterior</span>
-          </div>
-          <p className="mb-4 text-xs text-gray-400 dark:text-neutral-500">Vendas de {rangeLabel}</p>
-          <BarChart curData={curRevenueByDay} prevData={prevRevenueByDay} />
-          <div className="mt-3 flex items-center gap-5">
-            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" />
-              {monthLabel}
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" />
-              Mês anterior
-            </span>
-          </div>
-        </div>
-
-        {/* Valor Investido + Total de Vendas */}
-        <div className="flex flex-col gap-5 xl:col-span-2">
-          <InvestedValueCard
-            value={investedValue}
-            saleValue={stockSaleValue}
-            productsCount={productsData?.data.filter((p) => (p.costPrice ?? 0) > 0).length ?? 0}
-          />
-          <TotalSalesCard value={totalSales} count={confirmedOrders.length} />
-        </div>
+        </aside>
       </div>
-
-      {/* ── bottom row ───────────────────────────────── */}
-      {/* Mobile carousel */}
-      <SlideCarousel>
-        <CategoriesCard categoryStats={categoryStats} />
-        <TopProductsCard products={displayTopProducts} />
-        <WeeklyOrdersCard
-          curData={weekCur}
-          prevData={weekPrev}
-          total={weekTotalCur}
-          trend={weekTrend}
-          trendUp={weekTrendUp}
-          label={weekLabel}
-        />
-      </SlideCarousel>
-
-      {/* Desktop grid */}
-      <div className="hidden grid-cols-3 gap-5 lg:grid">
-        <CategoriesCard categoryStats={categoryStats} />
-        <TopProductsCard products={displayTopProducts} />
-        <WeeklyOrdersCard
-          curData={weekCur}
-          prevData={weekPrev}
-          total={weekTotalCur}
-          trend={weekTrend}
-          trendUp={weekTrendUp}
-          label={weekLabel}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <StockByCategoryCard categories={stockByCategory} />
-        <StockByTypeCard types={stockByType} />
-      </div>
-
-      <p className="text-xs text-gray-400 dark:text-neutral-500">
-        {productsData?.total ?? 0} produtos · {confirmedOrders.length} pedidos confirmados
-      </p>
-    </div>
-  )
-}
-
-/* ── sub-cards ─────────────────────────────────────────── */
-const CATEGORY_POSITIONS = [
-  'absolute top-0 left-0',
-  'absolute top-5 right-0',
-  'absolute bottom-0 left-10',
-]
-
-function CategoriesCard({
-  categoryStats,
-}: {
-  categoryStats: { name: string; count: number; color: string }[]
-}) {
-  const totalSold = categoryStats.reduce((s, c) => s + c.count, 0)
-  return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
-        Categorias de Destaque
-      </h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
-        {totalSold > 0 ? `${totalSold} unidades vendidas` : 'Sem vendas ainda'}
-      </p>
-
-      {categoryStats.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
-          Sem vendas
-        </div>
-      ) : (
-        <div className="relative mx-auto h-52 w-52">
-          {categoryStats.map((cat, i) => (
-            <div
-              key={cat.name}
-              className={`${CATEGORY_POSITIONS[i]} flex h-30 w-30 items-center justify-center rounded-full`}
-              style={{ backgroundColor: cat.color }}
-            >
-              <div className="text-center text-white">
-                <p className="text-lg leading-none font-bold">{cat.count}</p>
-                <p className="mt-1 text-[11px] font-medium">{cat.name}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function TopProductsCard({
-  products,
-}: {
-  products: {
-    productId: string | null
-    name: string
-    count: number
-    image: string | null
-    price: number
-  }[]
-}) {
-  return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Mais Vendidos</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
-        Produtos com maior demanda
-      </p>
-
-      {products.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
-          Sem vendas ainda
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {products.map((p) => (
-            <div key={p.productId} className="flex items-center gap-3">
-              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-neutral-800">
-                {p.image ? (
-                  <Image src={p.image} alt={p.name} fill className="object-cover" sizes="40px" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-gray-300 dark:text-neutral-600">
-                    ?
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-800 dark:text-neutral-100">
-                  {p.name}
-                </p>
-                {p.count > 0 && (
-                  <p className="text-[11px] text-gray-400 dark:text-neutral-500">
-                    {p.count} vendido{p.count !== 1 ? 's' : ''}
-                  </p>
-                )}
-              </div>
-              <span className="shrink-0 text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                {p.price > 0 ? formatCurrency(p.price) : '—'}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function WeeklyOrdersCard({
-  curData,
-  prevData,
-  total,
-  trend,
-  trendUp,
-  label,
-}: {
-  curData: number[]
-  prevData: number[]
-  total: number
-  trend: number | null
-  trendUp: boolean
-  label: string
-}) {
-  return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Pedidos</h2>
-      </div>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-        {total.toLocaleString('pt-BR')}
-      </p>
-      <div className="mt-1.5 mb-3 flex items-center gap-2">
-        {trend !== null ? (
-          <span
-            className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${trendUp ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}
-          >
-            {trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            {Math.abs(trend).toFixed(1)}%
-          </span>
-        ) : (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400 dark:bg-neutral-800 dark:text-neutral-500">
-            —
-          </span>
-        )}
-        <span className="text-xs text-gray-400 dark:text-neutral-500">vs semana anterior</span>
-      </div>
-      <p className="mb-4 text-xs text-gray-400 dark:text-neutral-500">{label}</p>
-      <LineChart curData={curData} prevData={prevData} />
-      <div className="mt-3 flex items-center gap-5">
-        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#4A6CF7]" />
-          Últimos 7 dias
-        </span>
-        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-          <span className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-neutral-700" />
-          Semana anterior
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function TotalSalesCard({ value, count }: { value: number; count: number }) {
-  return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">Total de Vendas</h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
-        {count > 0
-          ? `${count} pedido${count !== 1 ? 's' : ''} confirmado${count !== 1 ? 's' : ''}`
-          : 'Nenhuma venda ainda'}
-      </p>
-      {value === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
-          Sem dados
-        </div>
-      ) : (
-        <div className="flex flex-col justify-center">
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {formatCurrency(value)}
-          </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">Acumulado geral</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function InvestedValueCard({
-  value,
-  saleValue,
-  productsCount,
-}: {
-  value: number
-  saleValue: number
-  productsCount: number
-}) {
-  return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
-        Valor do Estoque
-      </h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
-        {productsCount > 0
-          ? `${productsCount} produto${productsCount !== 1 ? 's' : ''} com custo cadastrado`
-          : 'Nenhum custo cadastrado'}
-      </p>
-      {value === 0 && saleValue === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
-          Sem dados
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(value)}
-            </p>
-            <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">
-              Valor Investido
-              <br />
-              Custo × estoque atual
-            </p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(saleValue)}
-            </p>
-            <p className="mt-1 text-xs text-gray-400 dark:text-neutral-500">
-              Valor de Venda
-              <br />
-              Preço × estoque atual
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function StockByCategoryCard({ categories }: { categories: StockByCategory[] }) {
-  const sorted = [...categories].sort((a, b) => {
-    if (a.isLow !== b.isLow) return a.isLow ? -1 : 1
-    return a.totalStock - b.totalStock
-  })
-
-  return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
-        Estoque por Categoria
-      </h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
-        Unidades em estoque de produtos ativos, por categoria
-      </p>
-
-      {sorted.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
-          Sem categorias
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sorted.map((cat) => {
-            const max = Math.max(...sorted.map((c) => c.totalStock), 1)
-            const pct = Math.min((cat.totalStock / max) * 100, 100)
-            return (
-              <div key={cat.id} className="flex items-center gap-3">
-                <span className="w-28 shrink-0 truncate text-sm text-gray-700 dark:text-neutral-200">
-                  {cat.name}
-                </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
-                  <div
-                    className={`h-full rounded-full ${cat.isLow ? 'bg-red-500' : 'bg-[#4A6CF7]'}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="w-10 shrink-0 text-right text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                  {cat.totalStock}
-                </span>
-                {cat.isLow && (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-500 dark:bg-red-500/10 dark:text-red-400">
-                    <AlertTriangle className="h-3 w-3" />
-                    Baixo
-                  </span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function StockByTypeCard({ types }: { types: StockByType[] }) {
-  const sorted = [...types].sort((a, b) => {
-    if (a.isLow !== b.isLow) return a.isLow ? -1 : 1
-    return a.totalStock - b.totalStock
-  })
-
-  return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-neutral-900 dark:ring-neutral-800">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-neutral-300">
-        Estoque por Tipo
-      </h2>
-      <p className="mt-0.5 mb-5 text-xs text-gray-400 dark:text-neutral-500">
-        Unidades em estoque de produtos ativos, por tipo
-      </p>
-
-      {sorted.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-sm text-gray-300 dark:text-neutral-600">
-          Sem tipos
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sorted.map((type) => {
-            const max = Math.max(...sorted.map((t) => t.totalStock), 1)
-            const pct = Math.min((type.totalStock / max) * 100, 100)
-            return (
-              <div key={type.id} className="flex items-center gap-3">
-                <span className="w-28 shrink-0 truncate text-sm text-gray-700 dark:text-neutral-200">
-                  {type.name}
-                </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800">
-                  <div
-                    className={`h-full rounded-full ${type.isLow ? 'bg-red-500' : 'bg-[#4A6CF7]'}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="w-10 shrink-0 text-right text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                  {type.totalStock}
-                </span>
-                {type.isLow && (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-500 dark:bg-red-500/10 dark:text-red-400">
-                    <AlertTriangle className="h-3 w-3" />
-                    Baixo
-                  </span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }
